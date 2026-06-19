@@ -1,0 +1,1859 @@
+<!DOCTYPE html>
+<html lang="it" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FrigoTracker - Gestione Intelligente del Frigo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Personalizzazione barra di scorrimento */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+        /* Correzione visualizzazione pulsanti mobile */
+        button:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-full flex flex-col transition-colors duration-300 pb-16 md:pb-0">
+
+    <!-- INTESTAZIONE / NAVIGAZIONE -->
+    <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Logo del Brand -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('dashboard')">
+                <div class="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand-500/30">
+                    <i data-lucide="refrigerator" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold tracking-tight bg-gradient-to-r from-brand-500 to-sky-600 bg-clip-text text-transparent">FrigoTracker</h1>
+                    <p class="text-[10px] text-slate-400 dark:text-slate-500 hidden sm:block">Antispreco Intelligente</p>
+                </div>
+            </div>
+
+            <!-- Azioni Principali -->
+            <div class="flex items-center space-x-1.5 sm:space-x-4">
+                <!-- Navigazione Desktop (Nascosta su Mobile) -->
+                <nav class="hidden md:flex items-center space-x-2">
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="flex items-center space-x-2 px-3 py-2 rounded-lg bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-400 text-sm font-medium transition-all">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                        <span>Frigorifero</span>
+                    </button>
+                    <button onclick="switchTab('stats')" id="nav-stats" class="flex items-center space-x-2 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-medium transition-all">
+                        <i data-lucide="pie-chart" class="w-4 h-4"></i>
+                        <span>Statistiche</span>
+                    </button>
+                </nav>
+
+                <span class="hidden md:inline h-6 w-px bg-slate-200 dark:bg-slate-800"></span>
+
+                <!-- Stato Sincronizzazione Cloud -->
+                <button onclick="openCloudModal()" class="flex items-center space-x-1.5 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Sincronizzazione Cloud">
+                    <i id="cloud-status-icon" data-lucide="cloud-off" class="w-5 h-5 text-slate-400"></i>
+                    <span id="cloud-status-text" class="hidden lg:inline text-xs font-semibold text-slate-400">Locale</span>
+                </button>
+
+                <!-- Cambio Tema Chiaro/Scuro -->
+                <button onclick="toggleTheme()" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors" title="Cambia tema">
+                    <i id="theme-icon" data-lucide="moon" class="w-5 h-5"></i>
+                </button>
+
+                <!-- Menu Import / Export -->
+                <div class="relative inline-block text-left" id="settings-menu-container">
+                    <button onclick="toggleMenu('settings-menu')" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors" title="Gestione Dati">
+                        <i data-lucide="database" class="w-5 h-5"></i>
+                    </button>
+                    <!-- Dropdown -->
+                    <div id="settings-menu" class="hidden absolute right-0 mt-2 w-48 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl z-40 py-1 transition-all">
+                        <button onclick="exportData()" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center space-x-2">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            <span>Esporta Backup (JSON)</span>
+                        </button>
+                        <label class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center space-x-2 cursor-pointer">
+                            <i data-lucide="upload" class="w-4 h-4"></i>
+                            <span>Importa Backup (JSON)</span>
+                            <input type="file" id="import-file" accept=".json" class="hidden" onchange="importData(event)">
+                        </label>
+                        <hr class="border-slate-200 dark:border-slate-800 my-1">
+                        <button onclick="openResetModal()" class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center space-x-2">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            <span>Svuota Frigorifero</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bottone Aggiunta Desktop (Nascosto su Mobile) -->
+                <button onclick="openFoodModal(null)" class="hidden md:flex items-center space-x-1.5 bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2 px-4 rounded-xl shadow-lg shadow-brand-500/25 transition-all text-sm">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                    <span>Aggiungi</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- BARRA DI NAVIGAZIONE INFERIORE (Solo su Mobile) -->
+    <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] px-6 py-2 flex items-center justify-around pb-safe">
+        <button onclick="switchTab('dashboard')" id="mobile-nav-dashboard" class="flex flex-col items-center justify-center text-brand-500 dark:text-brand-400 transition-colors py-1">
+            <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+            <span class="text-[10px] font-semibold mt-1">Frigorifero</span>
+        </button>
+        
+        <!-- Pulsante FAB Centrale per Aggiunta Rapida -->
+        <button onclick="openFoodModal(null)" class="relative -top-5 w-14 h-14 bg-brand-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-brand-500/40 transition-transform active:scale-90 z-50">
+            <i data-lucide="plus" class="w-7 h-7"></i>
+        </button>
+
+        <button onclick="switchTab('stats')" id="mobile-nav-stats" class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 transition-colors py-1">
+            <i data-lucide="pie-chart" class="w-5 h-5"></i>
+            <span class="text-[10px] font-semibold mt-1">Statistiche</span>
+        </button>
+    </div>
+
+    <!-- SISTEMA DI NOTIFICA TOAST -->
+    <div id="toast" class="fixed top-4 left-4 right-4 sm:top-auto sm:bottom-5 sm:right-5 sm:left-auto z-50 flex items-center space-x-2 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl opacity-0 transform translate-y-[-20px] sm:translate-y-4 pointer-events-none transition-all duration-300 dark:bg-white dark:text-slate-950">
+        <i id="toast-icon" data-lucide="check" class="w-5 h-5 text-emerald-400 dark:text-emerald-600"></i>
+        <span id="toast-message" class="text-sm font-medium">Operazione completata!</span>
+    </div>
+
+    <!-- CONTENUTO PRINCIPALE -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-8">
+
+        <!-- Banner Informativo Frigo Condiviso -->
+        <div id="shared-fridge-banner" class="hidden mb-6 p-4 bg-gradient-to-r from-brand-500 to-sky-600 text-white rounded-2xl shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-white/20 rounded-xl">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm">Modalità Frigo Condiviso Attiva</h3>
+                    <p class="text-xs text-white/80">Stai visualizzando il frigo condiviso. Codice: <span id="shared-fridge-banner-code" class="font-mono font-bold tracking-wider select-all">---</span></p>
+                </div>
+            </div>
+            <button onclick="disconnectSharedFridge()" class="text-xs bg-white text-brand-600 font-semibold px-3 py-1.5 rounded-lg hover:bg-brand-50 transition-all flex items-center space-x-1 w-full sm:w-auto justify-center">
+                <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+                <span>Torna al mio frigo</span>
+            </button>
+        </div>
+
+        <!-- ================= TAB: INVENTARIO / DASHBOARD ================= -->
+        <section id="tab-dashboard" class="space-y-6 sm:space-y-8">
+            
+            <!-- CONTATORI STATISTICHE VELOCI (KPI - INTERATTIVI) -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                <!-- Card Stat: Totale -->
+                <div onclick="openKpiModal('all')" class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-95 transition-all duration-200 select-none">
+                    <div>
+                        <p class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Alimenti totali</p>
+                        <h3 class="text-2xl sm:text-3xl font-bold mt-1" id="stat-total">0</h3>
+                    </div>
+                    <div class="p-2 sm:p-3 bg-brand-100 text-brand-600 dark:bg-brand-950/40 dark:text-brand-400 rounded-xl">
+                        <i data-lucide="package" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                    </div>
+                </div>
+                <!-- Card Stat: Sicuro -->
+                <div onclick="openKpiModal('safe')" class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-95 transition-all duration-200 select-none">
+                    <div>
+                        <p class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Al Sicuro (&gt;3gg)</p>
+                        <h3 class="text-2xl sm:text-3xl font-bold text-emerald-500 mt-1" id="stat-safe">0</h3>
+                    </div>
+                    <div class="p-2 sm:p-3 bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 rounded-xl">
+                        <i data-lucide="shield-check" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                    </div>
+                </div>
+                <!-- Card Stat: In Scadenza -->
+                <div onclick="openKpiModal('expiring')" class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-95 transition-all duration-200 select-none">
+                    <div>
+                        <p class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">In scadenza (≤3gg)</p>
+                        <h3 class="text-2xl sm:text-3xl font-bold text-amber-500 mt-1" id="stat-expiring">0</h3>
+                    </div>
+                    <div class="p-2 sm:p-3 bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 rounded-xl">
+                        <i data-lucide="clock" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                    </div>
+                </div>
+                <!-- Card Stat: Scaduti -->
+                <div onclick="openKpiModal('expired')" class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-95 transition-all duration-200 select-none">
+                    <div>
+                        <p class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Scaduti</p>
+                        <h3 class="text-2xl sm:text-3xl font-bold text-rose-500 mt-1" id="stat-expired">0</h3>
+                    </div>
+                    <div class="p-2 sm:p-3 bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 rounded-xl">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RICERCA E CONTROLLI FILTRO -->
+            <div class="bg-white dark:bg-slate-900 p-3.5 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
+                <!-- Campo di Ricerca -->
+                <div class="relative w-full md:w-96">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                        <i data-lucide="search" class="w-4 h-4"></i>
+                    </span>
+                    <input type="text" id="search-input" oninput="applyFilters()" placeholder="Cerca un alimento..." class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all text-sm">
+                </div>
+                <!-- Gruppo di Filtri -->
+                <div class="flex flex-col sm:flex-row w-full md:w-auto items-center gap-2 sm:gap-3 justify-end">
+                    <select id="filter-expiry" onchange="applyFilters()" class="w-full sm:w-auto px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all text-sm">
+                        <option value="all">Tutte le scadenze</option>
+                        <option value="safe">Al sicuro (&gt; 5 giorni)</option>
+                        <option value="warning">Presto in scadenza (3-5 giorni)</option>
+                        <option value="critical">Urgente (1-2 giorni)</option>
+                        <option value="expired">Già Scaduti</option>
+                    </select>
+
+                    <select id="filter-sort" onchange="applyFilters()" class="w-full sm:w-auto px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all text-sm">
+                        <option value="expiry-asc">Scadenza più vicina</option>
+                        <option value="expiry-desc">Scadenza più lontana</option>
+                        <option value="name-asc">Nome (A-Z)</option>
+                        <option value="name-desc">Nome (Z-A)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- GRIGLIA DELLE CARD CATEGORIA -->
+            <div>
+                <h2 class="text-base sm:text-lg font-bold tracking-tight mb-3 flex items-center gap-2">
+                    <i data-lucide="grid" class="w-5 h-5 text-brand-500"></i>
+                    <span>Sfoglia Categorie</span>
+                </h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3" id="categories-grid">
+                    <!-- Popolato via JS -->
+                </div>
+            </div>
+
+            <!-- RISULTATI DI RICERCA / FILTRO DINAMICO -->
+            <div id="search-results-section" class="hidden">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-base sm:text-lg font-bold tracking-tight flex items-center gap-2">
+                        <i data-lucide="filter" class="w-5 h-5 text-brand-500"></i>
+                        <span>Risultati della ricerca</span>
+                    </h2>
+                    <button onclick="clearFilters()" class="text-xs sm:text-sm text-brand-500 hover:underline">Azzera filtri</button>
+                </div>
+                <div id="search-results-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Popolato via JS -->
+                </div>
+                <!-- Stato vuoto per la ricerca -->
+                <div id="search-empty-state" class="hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 sm:p-12 text-center">
+                    <i data-lucide="info" class="w-10 h-10 text-slate-300 dark:text-slate-700 mx-auto mb-3"></i>
+                    <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">Nessun alimento corrisponde alla ricerca corrente.</p>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================= TAB: STATISTICHE / ANALISI ================= -->
+        <section id="tab-stats" class="hidden space-y-6 sm:space-y-8">
+            <h2 class="text-xl sm:text-2xl font-bold tracking-tight">Report & Statistiche</h2>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <!-- KPI Consumati -->
+                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <span class="text-[10px] sm:text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Alimenti Consumati Finora</span>
+                        <h4 class="text-3xl sm:text-4xl font-extrabold text-emerald-500 mt-2" id="kpi-consumed">0</h4>
+                        <p class="text-xs text-slate-400 mt-1">Ottimo lavoro nel ridurre lo spreco!</p>
+                    </div>
+                </div>
+
+                <!-- KPI Spreco -->
+                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <span class="text-[10px] sm:text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Alimenti Buttati (Scaduti)</span>
+                        <h4 class="text-3xl sm:text-4xl font-extrabold text-rose-500 mt-2" id="kpi-wasted">0</h4>
+                        <p class="text-xs text-slate-400 mt-1">Cerca di consumare gli alimenti prima della scadenza.</p>
+                    </div>
+                </div>
+
+                <!-- KPI Tasso di Efficienza -->
+                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <span class="text-[10px] sm:text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Indice di Sostenibilità</span>
+                        <h4 class="text-3xl sm:text-4xl font-extrabold text-brand-500 mt-2" id="kpi-efficiency">100%</h4>
+                        <p class="text-xs text-slate-400 mt-1">Rapporto tra cibo consumato e totale smaltito.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BLOCCO GRAFICI -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+                <!-- Grafico a Ciambella Consumo / Spreco -->
+                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <h3 class="text-sm sm:text-md font-bold mb-4 flex items-center gap-2">
+                        <i data-lucide="pie-chart" class="w-5 h-5 text-brand-500"></i>
+                        <span>Distribuzione Spreco / Consumo</span>
+                    </h3>
+                    <div class="relative h-56 sm:h-64 flex justify-center items-center">
+                        <canvas id="ratioChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Grafico a barre Categorie -->
+                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <h3 class="text-sm sm:text-md font-bold mb-4 flex items-center gap-2">
+                        <i data-lucide="bar-chart-2" class="w-5 h-5 text-brand-500"></i>
+                        <span>Distribuzione Attuale nelle Categorie</span>
+                    </h3>
+                    <div class="relative h-56 sm:h-64">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 mt-auto py-6 text-center text-xs sm:text-sm text-slate-500 transition-colors duration-300">
+        <p>© 2026 FrigoTracker • Sviluppato per ridurre lo spreco alimentare e risparmiare risorse.</p>
+    </footer>
+
+    <!-- ================= MODALE: DETTAGLIO CATEGORIA ================= -->
+    <div id="category-modal" class="fixed inset-0 z-50 overflow-y-auto hidden">
+        <div class="min-h-screen text-center flex items-end sm:items-center justify-center">
+            <!-- Overlay di sfondo -->
+            <div onclick="closeCategoryModal()" class="fixed inset-0 bg-slate-950/40 dark:bg-slate-950/70 backdrop-blur-sm transition-opacity"></div>
+            <!-- Corpo della Modale -->
+            <div class="inline-block w-full max-w-4xl bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all border-t sm:border border-slate-200 dark:border-slate-800 max-h-[85vh] sm:max-h-[90vh] flex flex-col z-10">
+                <!-- Intestazione Modale -->
+                <div class="px-5 py-4 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
+                    <div class="flex items-center space-x-3 overflow-hidden">
+                        <span id="modal-category-icon" class="text-2xl p-1.5 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex-shrink-0">🥑</span>
+                        <div class="truncate">
+                            <h3 id="modal-category-title" class="text-base sm:text-lg font-bold truncate">Categoria</h3>
+                            <p class="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">Alimenti in questa sezione</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2 flex-shrink-0">
+                        <button onclick="openFoodModalFromCategory()" class="bg-brand-500 hover:bg-brand-600 active:scale-95 text-white p-2 sm:px-3 sm:py-1.5 rounded-xl shadow-md shadow-brand-500/15 transition-all text-xs font-semibold flex items-center space-x-1" title="Aggiungi alimento a questa categoria">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            <span class="hidden sm:inline">Aggiungi</span>
+                        </button>
+                        <button onclick="closeCategoryModal()" class="p-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- Contenuto Modale -->
+                <div class="px-5 py-5 overflow-y-auto flex-grow">
+                    <div id="category-items-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                        <!-- Popolato via JS -->
+                    </div>
+                    <div id="category-empty-state" class="hidden text-center py-10 sm:py-12">
+                        <i data-lucide="package-open" class="w-10 h-10 text-slate-300 dark:text-slate-700 mx-auto mb-3"></i>
+                        <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">Ancora nessun alimento in questa categoria.</p>
+                        <button onclick="openFoodModalFromCategory()" class="mt-4 px-4 py-2 bg-brand-500 text-white font-medium rounded-xl hover:bg-brand-600 transition-colors text-xs sm:text-sm inline-flex items-center gap-1.5">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            <span>Aggiungi Alimento</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODALE: DETTAGLIO FILTRO STATISTICHE KPI ================= -->
+    <div id="kpi-modal" class="fixed inset-0 z-50 overflow-y-auto hidden">
+        <div class="min-h-screen text-center flex items-end sm:items-center justify-center">
+            <!-- Overlay di sfondo -->
+            <div onclick="closeKpiModal()" class="fixed inset-0 bg-slate-950/40 dark:bg-slate-950/70 backdrop-blur-sm transition-opacity"></div>
+            <!-- Corpo della Modale -->
+            <div class="inline-block w-full max-w-4xl bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all border-t sm:border border-slate-200 dark:border-slate-800 max-h-[85vh] sm:max-h-[90vh] flex flex-col z-10">
+                <!-- Intestazione Modale -->
+                <div class="px-5 py-4 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
+                    <div class="flex items-center space-x-3 overflow-hidden">
+                        <span id="modal-kpi-icon-wrapper" class="text-xl p-2 rounded-xl shadow-sm border flex-shrink-0 flex items-center justify-center">
+                            <i id="modal-kpi-icon" data-lucide="list" class="w-5 h-5"></i>
+                        </span>
+                        <div class="truncate">
+                            <h3 id="modal-kpi-title" class="text-base sm:text-lg font-bold truncate">Dettaglio Statistica</h3>
+                            <p id="modal-kpi-subtitle" class="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">Alimenti in questa categoria statistica</p>
+                        </div>
+                    </div>
+                    <button onclick="closeKpiModal()" class="p-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400 flex-shrink-0">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <!-- Contenuto Modale -->
+                <div class="px-5 py-5 overflow-y-auto flex-grow">
+                    <div id="kpi-items-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                        <!-- Popolato via JS -->
+                    </div>
+                    <div id="kpi-empty-state" class="hidden text-center py-10 sm:py-12">
+                        <i data-lucide="package-open" class="w-10 h-10 text-slate-300 dark:text-slate-700 mx-auto mb-3"></i>
+                        <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">Nessun alimento in questo gruppo statistico al momento.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODALE: AGGIUNGI / MODIFICA ALIMENTO ================= -->
+    <div id="food-modal" class="fixed inset-0 z-50 overflow-y-auto hidden">
+        <div class="min-h-screen text-center flex items-end sm:items-center justify-center">
+            <!-- Overlay di sfondo -->
+            <div onclick="closeFoodModal()" class="fixed inset-0 bg-slate-950/40 dark:bg-slate-950/70 backdrop-blur-sm transition-opacity"></div>
+            <!-- Corpo della Modale -->
+            <div class="inline-block w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all border-t sm:border border-slate-200 dark:border-slate-800 max-h-[85vh] flex flex-col z-10">
+                <!-- Intestazione Modale -->
+                <div class="px-5 py-4 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
+                    <div>
+                        <h3 id="food-modal-title" class="text-base sm:text-lg font-bold">Aggiungi Alimento</h3>
+                        <p class="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">Compila i dettagli del cibo</p>
+                    </div>
+                    <button onclick="closeFoodModal()" class="p-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <!-- Form della Modale -->
+                <form id="food-form" onsubmit="saveFood(event)" class="px-5 py-5 space-y-4 overflow-y-auto flex-grow">
+                    <input type="hidden" id="food-id">
+                    
+                    <!-- Nome -->
+                    <div>
+                        <label for="food-name" class="block text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Nome Alimento*</label>
+                        <input type="text" id="food-name" required placeholder="Esempio: Latte, Mela, Pollo..." class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all text-sm">
+                    </div>
+
+                    <!-- Categoria e Quantità -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="food-category" class="block text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Categoria*</label>
+                            <select id="food-category" required class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all text-sm">
+                                <option value="" disabled selected>Scegli...</option>
+                                <option value="Latticini">🥛 Latticini</option>
+                                <option value="Carne">🥩 Carne</option>
+                                <option value="Pesce">🐟 Pesce</option>
+                                <option value="Verdura">🥦 Verdura</option>
+                                <option value="Frutta">🍎 Frutta</option>
+                                <option value="Uova">🥚 Uova</option>
+                                <option value="Formaggi">🧀 Formaggi</option>
+                                <option value="Conserve">🥫 Conserve</option>
+                                <option value="Bevande">🥤 Bevande</option>
+                                <option value="Surgelati">❄️ Surgelati</option>
+                                <option value="Dolci">🍰 Dolci</option>
+                                <option value="Altro">📦 Altro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="food-quantity" class="block text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Quantità / Unità*</label>
+                            <input type="text" id="food-quantity" required placeholder="Es. 1 litro, 500g" class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Data Scadenza -->
+                    <div>
+                        <label for="food-expiry" class="block text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Data di Scadenza*</label>
+                        <input type="date" id="food-expiry" required class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all text-sm">
+                    </div>
+
+                    <!-- Note -->
+                    <div>
+                        <label for="food-notes" class="block text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Note (Opzionale)</label>
+                        <textarea id="food-notes" rows="2" placeholder="Note extra..." class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all text-sm resize-none"></textarea>
+                    </div>
+
+                    <!-- Azioni Modale -->
+                    <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end space-x-3 flex-shrink-0">
+                        <button type="button" onclick="closeFoodModal()" class="px-5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold transition-colors">Annulla</button>
+                        <button type="submit" class="px-5 py-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-colors shadow-lg shadow-brand-500/15 text-sm">Salva</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODALE: CONFERMA ELIMINAZIONE / SVUOTA ================= -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 overflow-y-auto hidden">
+        <div class="min-h-screen px-4 text-center flex items-end sm:items-center justify-center">
+            <div onclick="closeConfirmModal()" class="fixed inset-0 bg-slate-950/40 dark:bg-slate-950/70 backdrop-blur-sm transition-opacity"></div>
+            <div class="inline-block w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all border-t sm:border border-slate-200 dark:border-slate-800 p-6 z-10">
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                    </div>
+                    <h3 id="confirm-title" class="text-base sm:text-lg font-bold mb-2">Conferma azione</h3>
+                    <p id="confirm-description" class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-6">Sei sicuro di voler procedere?</p>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button onclick="closeConfirmModal()" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs sm:text-sm font-semibold transition-colors">Annulla</button>
+                    <button id="confirm-action-btn" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-lg shadow-rose-600/15">Procedi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODALE: GESTIONE CLOUD FIRESTORE ================= -->
+    <div id="cloud-modal" class="fixed inset-0 z-50 overflow-y-auto hidden">
+        <div class="min-h-screen text-center flex items-end sm:items-center justify-center">
+            <!-- Overlay -->
+            <div onclick="closeCloudModal()" class="fixed inset-0 bg-slate-950/40 dark:bg-slate-950/70 backdrop-blur-sm transition-opacity"></div>
+            <!-- Corpo della Modale -->
+            <div class="inline-block w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all border-t sm:border border-slate-200 dark:border-slate-800 p-5 sm:p-6 max-h-[85vh] flex flex-col z-10">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4 flex-shrink-0">
+                    <h3 class="text-base sm:text-lg font-bold flex items-center gap-2">
+                        <i data-lucide="cloud" class="w-5 h-5 text-brand-500"></i>
+                        <span>Sincronizzazione Cloud (Firebase)</span>
+                    </h3>
+                    <button onclick="closeCloudModal()" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <!-- CONTENUTO SCORREVOLE -->
+                <div class="overflow-y-auto flex-grow pr-1">
+                    <!-- STATO NON CONFIGURATO -->
+                    <div id="cloud-state-unconfigured" class="space-y-4">
+                        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                            Attiva il cloud per condividere il tuo frigo in tempo reale con altri smartphone o computer! I dati verranno salvati su **Cloud Firestore** in modo sicuro.
+                        </p>
+                        <div class="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-xl border border-blue-100 dark:border-blue-900/60 text-xs text-blue-700 dark:text-blue-300">
+                            <span class="font-bold block mb-1">Come fare:</span>
+                            1. Crea un progetto gratuito su <a href="https://console.firebase.google.com" target="_blank" class="underline hover:text-blue-800 dark:hover:text-blue-200">Firebase Console</a>.<br>
+                            2. Attiva **Firestore Database** e **Anonymous Authentication**.<br>
+                            3. Copia il JSON di configurazione SDK dell'applicazione web e incollalo qui sotto.
+                        </div>
+                        <div>
+                            <label for="cloud-config-input" class="block text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Configurazione SDK Firebase (JSON)</label>
+                            <textarea id="cloud-config-input" rows="5" placeholder='{&#10;  "apiKey": "AIzaSy...",&#10;  "authDomain": "...",&#10;  "projectId": "...",&#10;  "storageBucket": "...",&#10;  "messagingSenderId": "...",&#10;  "appId": "..."&#10;}' class="w-full font-mono text-xs p-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+                        </div>
+                        <div class="flex justify-end pt-2">
+                            <button onclick="saveCloudConfig()" class="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-lg shadow-brand-500/15">
+                                Connetti al Cloud
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- STATO IN CONNESSIONE -->
+                    <div id="cloud-state-connecting" class="hidden py-8 text-center space-y-4">
+                        <div class="w-12 h-12 border-4 border-slate-200 dark:border-slate-800 border-t-brand-500 rounded-full animate-spin mx-auto"></div>
+                        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">Inizializzazione dei servizi cloud...</p>
+                    </div>
+
+                    <!-- STATO CONNESSO -->
+                    <div id="cloud-state-connected" class="hidden space-y-6">
+                        <div class="bg-emerald-50 dark:bg-emerald-950/30 p-3.5 rounded-xl border border-emerald-100 dark:border-emerald-900/60 flex items-center space-x-3 text-emerald-800 dark:text-emerald-300">
+                            <i data-lucide="cloud-lightning" class="w-5 h-5 flex-shrink-0"></i>
+                            <div>
+                                <p class="text-xs sm:text-sm font-bold">FrigoTracker Connesso con Successo!</p>
+                                <p class="text-[10px] sm:text-xs text-emerald-600/90 dark:text-emerald-400/90">I tuoi dati sono sincronizzati in tempo reale nel Cloud.</p>
+                            </div>
+                        </div>
+
+                        <!-- Sezione Condivisione -->
+                        <div class="space-y-3">
+                            <h4 class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">Condividi questo frigorifero</h4>
+                            <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl">
+                                <div class="overflow-hidden pr-2">
+                                    <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Codice Frigo Personale (Condivisibile)</p>
+                                    <p id="personal-fridge-code" class="text-xs sm:text-sm font-mono font-bold text-slate-800 dark:text-slate-200 truncate">---</p>
+                                </div>
+                                <button onclick="copyPersonalFridgeCode()" class="flex items-center space-x-1 px-3 py-1.5 bg-brand-500 hover:bg-brand-600 text-white text-[10px] sm:text-xs font-bold rounded-lg transition-all shadow-md">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                    <span>Copia</span>
+                                </button>
+                            </div>
+                            <p class="text-[10px] sm:text-xs text-slate-400 leading-relaxed">Inserendo questo codice su un altro dispositivo (smartphone del coniuge, tablet, etc.) condividerete lo stesso identico frigorifero in tempo reale!</p>
+                        </div>
+
+                        <!-- Sezione Accedi a Frigo Condiviso -->
+                        <div class="border-t border-slate-100 dark:border-slate-800/60 pt-4 space-y-3">
+                            <h4 class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">Accedi a un frigo condiviso</h4>
+                            <div class="flex gap-2">
+                                <input type="text" id="shared-fridge-input" placeholder="Incolla il Codice..." class="flex-grow px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-brand-500 text-xs sm:text-sm font-mono font-semibold">
+                                <button onclick="connectSharedFridge()" class="px-4 py-2 bg-slate-800 dark:bg-slate-100 dark:text-slate-900 text-white font-bold rounded-xl text-xs sm:text-sm hover:bg-slate-700 dark:hover:bg-white transition-all shadow-md">
+                                    Collega
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Disconnessione / Ripristino -->
+                        <div class="border-t border-slate-100 dark:border-slate-800/60 pt-4 flex flex-col sm:flex-row justify-between gap-3">
+                            <button onclick="disconnectCloud()" class="text-xs text-red-500 hover:underline font-semibold flex items-center space-x-1 justify-center py-2 sm:py-0">
+                                <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+                                <span>Disconnetti Cloud</span>
+                            </button>
+                            <button onclick="closeCloudModal()" class="px-4 py-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-semibold">
+                                Chiudi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ================= IMPLEMENTAZIONE LOGICA APPLICAZIONE (UI & CORE) ================= -->
+    <script>
+        // ================= APPLICATION STATE =================
+        window.foods = [];
+        window.statsHistory = {
+            consumed: 0,
+            wasted: 0
+        };
+        window.currentTab = 'dashboard';
+        window.activeCategory = null;
+        window.activeKpiFilter = null; // Stato del filtro KPI attivo
+        window.confirmActionCallback = null;
+
+        // Configurazione delle Categorie
+        const CATEGORIES = {
+            'Latticini': { emoji: '🥛', color: 'border-sky-500 bg-sky-50/50 dark:bg-sky-950/10' },
+            'Carne': { emoji: '🥩', color: 'border-rose-500 bg-rose-50/50 dark:bg-rose-950/10' },
+            'Pesce': { emoji: '🐟', color: 'border-cyan-500 bg-cyan-50/50 dark:bg-cyan-950/10' },
+            'Verdura': { emoji: '🥦', color: 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/10' },
+            'Frutta': { emoji: '🍎', color: 'border-red-500 bg-red-50/50 dark:bg-red-950/10' },
+            'Uova': { emoji: '🥚', color: 'border-yellow-500 bg-yellow-50/50 dark:bg-yellow-950/10' },
+            'Formaggi': { emoji: '🧀', color: 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/10' },
+            'Conserve': { emoji: '🥫', color: 'border-orange-500 bg-orange-50/50 dark:bg-orange-950/10' },
+            'Bevande': { emoji: '🥤', color: 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/10' },
+            'Surgelati': { emoji: '❄️', color: 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/10' },
+            'Dolci': { emoji: '🍰', color: 'border-pink-500 bg-pink-50/50 dark:bg-pink-950/10' },
+            'Altro': { emoji: '📦', color: 'border-slate-500 bg-slate-50/50 dark:bg-slate-950/10' }
+        };
+
+        // Riferimenti ai Grafici
+        let ratioChart = null;
+        let categoryChart = null;
+
+        // Inizializzazione dell'Applicazione
+        window.addEventListener('DOMContentLoaded', () => {
+            initLocalStorage();
+            applyThemeOnLoad();
+            lucide.createIcons();
+            
+            // Gestione dei click fuori dal menu
+            document.addEventListener('click', closeSettingsMenuOnOutsideClick);
+            
+            // Rendering iniziale
+            renderDashboard();
+            updateStatsKPIs();
+        });
+
+        // ================= CONTROLLER DEL TEMA =================
+        function applyThemeOnLoad() {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                document.getElementById('theme-icon').setAttribute('data-lucide', 'sun');
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.getElementById('theme-icon').setAttribute('data-lucide', 'moon');
+            }
+            lucide.createIcons();
+        }
+
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+                document.getElementById('theme-icon').setAttribute('data-lucide', 'moon');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+                document.getElementById('theme-icon').setAttribute('data-lucide', 'sun');
+            }
+            lucide.createIcons();
+            if (currentTab === 'stats') {
+                renderCharts();
+            }
+        }
+
+        // ================= CAMBIO SCHEDE (TABS) =================
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            document.getElementById('tab-dashboard').classList.add('hidden');
+            document.getElementById('tab-stats').classList.add('hidden');
+            
+            document.getElementById('nav-dashboard').className = "flex items-center space-x-2 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-medium transition-all";
+            document.getElementById('nav-stats').className = "flex items-center space-x-2 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-medium transition-all";
+
+            const mobileDash = document.getElementById('mobile-nav-dashboard');
+            const mobileStats = document.getElementById('mobile-nav-stats');
+
+            if (tabName === 'dashboard') {
+                document.getElementById('tab-dashboard').classList.remove('hidden');
+                document.getElementById('nav-dashboard').className = "flex items-center space-x-2 px-3 py-2 rounded-lg bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-400 text-sm font-medium transition-all";
+                
+                if (mobileDash) mobileDash.className = "flex flex-col items-center justify-center text-brand-500 dark:text-brand-400 transition-colors py-1";
+                if (mobileStats) mobileStats.className = "flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 transition-colors py-1";
+                
+                renderDashboard();
+            } else if (tabName === 'stats') {
+                document.getElementById('tab-stats').classList.remove('hidden');
+                document.getElementById('nav-stats').className = "flex items-center space-x-2 px-3 py-2 rounded-lg bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-400 text-sm font-medium transition-all";
+                
+                if (mobileDash) mobileDash.className = "flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 transition-colors py-1";
+                if (mobileStats) mobileStats.className = "flex flex-col items-center justify-center text-brand-500 dark:text-brand-400 transition-colors py-1";
+                
+                updateStatsKPIs();
+                renderCharts();
+            }
+        }
+
+        // ================= PERSISTENZA DEI DATI (LOCAL STORAGE) =================
+        function initLocalStorage() {
+            if (localStorage.getItem('frigotracker_foods')) {
+                window.foods = JSON.parse(localStorage.getItem('frigotracker_foods'));
+            } else {
+                // Dati di Esempio Iniziali
+                window.foods = [
+                    { id: '1', name: 'Latte Intero', category: 'Latticini', quantity: '1 litro', expiry: getOffsetDateString(4), notes: 'Già aperto' },
+                    { id: '2', name: 'Petto di Pollo', category: 'Carne', quantity: '400g', expiry: getOffsetDateString(1), notes: '' },
+                    { id: '3', name: 'Pomodori Ciliegino', category: 'Verdura', quantity: '1 vaschetta', expiry: getOffsetDateString(-2), notes: 'Nel cassetto in basso' },
+                    { id: '4', name: 'Zucchine', category: 'Verdura', quantity: '3 pz', expiry: getOffsetDateString(8), notes: '' },
+                    { id: '5', name: 'Mirtilli freschi', category: 'Frutta', quantity: '125g', expiry: getOffsetDateString(3), notes: '' }
+                ];
+                saveFoods();
+            }
+
+            if (localStorage.getItem('frigotracker_history')) {
+                window.statsHistory = JSON.parse(localStorage.getItem('frigotracker_history'));
+            } else {
+                window.statsHistory = { consumed: 12, wasted: 3 };
+                saveHistory();
+            }
+        }
+
+        function saveFoods() {
+            localStorage.setItem('frigotracker_foods', JSON.stringify(window.foods));
+        }
+
+        function saveHistory() {
+            localStorage.setItem('frigotracker_history', JSON.stringify(window.statsHistory));
+        }
+
+        function getOffsetDateString(daysOffset) {
+            const date = new Date();
+            date.setDate(date.getDate() + daysOffset);
+            return date.toISOString().split('T')[0];
+        }
+
+        // ================= RENDERING DELLA DASHBOARD PRINCIPALE =================
+        function renderDashboard() {
+            const counts = getGeneralStats();
+            
+            // Aggiorna contatori
+            document.getElementById('stat-total').innerText = counts.total;
+            document.getElementById('stat-safe').innerText = counts.safe;
+            document.getElementById('stat-expiring').innerText = counts.expiring;
+            document.getElementById('stat-expired').innerText = counts.expired;
+
+            // Aggiorna Griglia delle Categorie
+            const grid = document.getElementById('categories-grid');
+            grid.innerHTML = '';
+            
+            Object.keys(CATEGORIES).forEach(cat => {
+                const catFoods = window.foods.filter(f => f.category === cat);
+                const count = catFoods.length;
+                const config = CATEGORIES[cat];
+                
+                let badgeClass = 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
+                let alertIndicator = '';
+
+                if (count > 0) {
+                    const hasExpired = catFoods.some(f => getDaysToExpiry(f.expiry) <= 0);
+                    const hasExpiring = catFoods.some(f => {
+                        const days = getDaysToExpiry(f.expiry);
+                        return days > 0 && days <= 3;
+                    });
+
+                    if (hasExpired) {
+                        badgeClass = 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300';
+                        alertIndicator = '<span class="absolute top-2 right-2 flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span></span>';
+                    } else if (hasExpiring) {
+                        badgeClass = 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300';
+                        alertIndicator = '<span class="absolute top-2 right-2 flex h-2 w-2"><span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span></span>';
+                    } else {
+                        badgeClass = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300';
+                    }
+                }
+
+                const cardHtml = `
+                    <div onclick="openCategoryModal('${cat}')" class="relative group cursor-pointer bg-white dark:bg-slate-900 border ${config.color} p-3 sm:p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 text-center flex flex-col items-center justify-center">
+                        ${alertIndicator}
+                        <span class="text-3xl sm:text-4xl mb-2 transition-transform group-hover:scale-110 duration-300">${config.emoji}</span>
+                        <h4 class="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200">${cat}</h4>
+                        <span class="mt-2 text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full ${badgeClass}">
+                            ${count} ${count === 1 ? 'art.' : 'artt.'}
+                        </span>
+                    </div>
+                `;
+                grid.insertAdjacentHTML('beforeend', cardHtml);
+            });
+
+            applyFilters();
+        }
+
+        // ================= FILTRI E UTILITY =================
+        function getDaysToExpiry(expiryDateStr) {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const expiry = new Date(expiryDateStr);
+            expiry.setHours(0,0,0,0);
+            
+            const diffTime = expiry - today;
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        function getExpiryColor(days) {
+            if (days <= 0) {
+                return {
+                    badge: 'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300',
+                    border: 'border-l-4 border-rose-500',
+                    icon: 'text-rose-500',
+                    desc: 'SCADUTO'
+                };
+            } else if (days <= 2) {
+                return {
+                    badge: 'bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-300',
+                    border: 'border-l-4 border-orange-500',
+                    icon: 'text-orange-500',
+                    desc: days === 1 ? 'Scade domani!' : 'Scade tra 2gg!'
+                };
+            } else if (days <= 3) {
+                return {
+                    badge: 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300',
+                    border: 'border-l-4 border-amber-500',
+                    icon: 'text-amber-500',
+                    desc: `In scadenza (${days}gg)`
+                };
+            } else {
+                return {
+                    badge: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300',
+                    border: 'border-l-4 border-emerald-500',
+                    icon: 'text-emerald-500',
+                    desc: `Al sicuro (ancora ${days}gg)`
+                };
+            }
+        }
+
+        function formatDateDisplay(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+
+        function getGeneralStats() {
+            const stats = { total: window.foods.length, safe: 0, expiring: 0, expired: 0 };
+            window.foods.forEach(f => {
+                const days = getDaysToExpiry(f.expiry);
+                if (days <= 0) stats.expired++;
+                else if (days <= 3) stats.expiring++;
+                else stats.safe++;
+            });
+            return stats;
+        }
+
+        function applyFilters() {
+            const searchVal = document.getElementById('search-input').value.toLowerCase().trim();
+            const filterExpiry = document.getElementById('filter-expiry').value;
+            const filterSort = document.getElementById('filter-sort').value;
+            
+            const resultsSection = document.getElementById('search-results-section');
+            const resultsList = document.getElementById('search-results-list');
+            const emptyState = document.getElementById('search-empty-state');
+
+            // Se la barra di ricerca è vuota e i filtri sono di default, nascondi la sezione risultati liberi
+            if (searchVal === '' && filterExpiry === 'all' && filterSort === 'expiry-asc') {
+                resultsSection.classList.add('hidden');
+                return;
+            }
+
+            resultsSection.classList.remove('hidden');
+            resultsList.innerHTML = '';
+
+            let filtered = window.foods.filter(f => {
+                const matchesSearch = f.name.toLowerCase().includes(searchVal) || f.category.toLowerCase().includes(searchVal);
+                const days = getDaysToExpiry(f.expiry);
+                
+                let matchesExpiry = true;
+                if (filterExpiry === 'safe') matchesExpiry = days > 3;
+                else if (filterExpiry === 'warning') matchesExpiry = days >= 3 && days <= 5;
+                else if (filterExpiry === 'critical') matchesExpiry = days >= 1 && days <= 2;
+                else if (filterExpiry === 'expired') matchesExpiry = days <= 0;
+
+                return matchesSearch && matchesExpiry;
+            });
+
+            // Ordinamento
+            filtered.sort((a, b) => {
+                if (filterSort === 'expiry-asc') {
+                    return new Date(a.expiry) - new Date(b.expiry);
+                } else if (filterSort === 'expiry-desc') {
+                    return new Date(b.expiry) - new Date(a.expiry);
+                } else if (filterSort === 'name-asc') {
+                    return a.name.localeCompare(b.name);
+                } else if (filterSort === 'name-desc') {
+                    return b.name.localeCompare(a.name);
+                }
+                return 0;
+            });
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                resultsList.classList.add('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                resultsList.classList.remove('hidden');
+                filtered.forEach(item => {
+                    resultsList.insertAdjacentHTML('beforeend', renderFoodCardHtml(item));
+                });
+                lucide.createIcons();
+            }
+        }
+
+        function clearFilters() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('filter-expiry').value = 'all';
+            document.getElementById('filter-sort').value = 'expiry-asc';
+            applyFilters();
+        }
+
+        // ================= RENDERING DELLA CARD DEL CIBO =================
+        function renderFoodCardHtml(item) {
+            const days = getDaysToExpiry(item.expiry);
+            const colorMeta = getExpiryColor(days);
+            const categoryEmoji = CATEGORIES[item.category]?.emoji || '📦';
+            
+            // Logica per colorare la cornice in base allo stato (Al Sicuro se > 3 giorni)
+            const isSafe = (days > 3);
+            const borderClass = isSafe 
+                ? 'border border-emerald-500 dark:border-emerald-500/70 shadow-sm shadow-emerald-500/5 bg-emerald-50/5 dark:bg-emerald-950/10' 
+                : 'border border-slate-200 dark:border-slate-800';
+            
+            return `
+                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 ${borderClass} ${colorMeta.border} overflow-hidden text-left">
+                    <div class="p-4 flex flex-col justify-between h-full space-y-3">
+                        
+                        <!-- Dettagli Alimento -->
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-start space-x-3 overflow-hidden">
+                                <span class="text-2xl p-2 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800 flex-shrink-0">${categoryEmoji}</span>
+                                <div class="overflow-hidden truncate">
+                                    <h4 class="font-bold text-slate-900 dark:text-white leading-tight truncate">${escapeHTML(item.name)}</h4>
+                                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">${item.category} • Quantità: <span class="font-medium text-slate-700 dark:text-slate-300">${escapeHTML(item.quantity)}</span></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Note se presenti -->
+                        ${item.notes ? `
+                            <p class="text-[11px] text-slate-500 bg-slate-50 dark:bg-slate-950/50 p-2 rounded-lg italic border-l-2 border-slate-300 dark:border-slate-700 leading-normal">
+                                "${escapeHTML(item.notes)}"
+                            </p>
+                        ` : ''}
+
+                        <!-- Contatore scadenza -->
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                            <div>
+                                <p class="text-[9px] uppercase font-semibold text-slate-400 tracking-wider">Scadenza</p>
+                                <p class="text-xs font-semibold text-slate-700 dark:text-slate-300">${formatDateDisplay(item.expiry)}</p>
+                            </div>
+                            <span class="text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-full ${colorMeta.badge}">
+                                ${colorMeta.desc}
+                            </span>
+                        </div>
+
+                        <!-- Pulsanti d'Azione -->
+                        <div class="grid grid-cols-3 gap-1 sm:gap-2 pt-1">
+                            <button onclick="consumeFood('${item.id}', true)" class="flex items-center justify-center space-x-1 py-2 px-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/40 text-[10px] sm:text-xs font-bold transition-colors">
+                                <i data-lucide="check" class="w-3.5 h-3.5 flex-shrink-0"></i>
+                                <span class="truncate">Usa</span>
+                            </button>
+                            <button onclick="openFoodModal('${item.id}')" class="flex items-center justify-center space-x-1 py-2 px-1 rounded-xl bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/40 text-[10px] sm:text-xs font-bold transition-colors">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5 flex-shrink-0"></i>
+                                <span class="truncate">Edita</span>
+                            </button>
+                            <button onclick="confirmDeleteFood('${item.id}')" class="flex items-center justify-center space-x-1 py-2 px-1 rounded-xl bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-[10px] sm:text-xs font-bold transition-colors">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5 flex-shrink-0"></i>
+                                <span class="truncate">Scarta</span>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            `;
+        }
+
+        // ================= GESTIONE MODALI UI =================
+        function openFoodModal(id = null, defaultCategory = null) {
+            const form = document.getElementById('food-form');
+            form.reset();
+            const titleEl = document.getElementById('food-modal-title');
+            
+            if (id) {
+                titleEl.innerText = "Modifica Alimento";
+                const food = window.foods.find(f => f.id === id);
+                if (food) {
+                    document.getElementById('food-id').value = food.id;
+                    document.getElementById('food-name').value = food.name;
+                    document.getElementById('food-category').value = food.category;
+                    document.getElementById('food-quantity').value = food.quantity;
+                    document.getElementById('food-expiry').value = food.expiry;
+                    document.getElementById('food-notes').value = food.notes;
+                }
+            } else {
+                titleEl.innerText = "Aggiungi Alimento";
+                document.getElementById('food-id').value = "";
+                document.getElementById('food-expiry').value = getOffsetDateString(5);
+                if (defaultCategory) {
+                    document.getElementById('food-category').value = defaultCategory;
+                }
+            }
+            document.getElementById('food-modal').classList.remove('hidden');
+        }
+
+        function closeFoodModal() {
+            document.getElementById('food-modal').classList.add('hidden');
+        }
+
+        function confirmDeleteFood(id) {
+            const item = window.foods.find(f => f.id === id);
+            if (!item) return;
+
+            openConfirmModal(
+                "Butta alimento",
+                `Sei sicuro di voler buttare via "${item.name}"? Verrà conteggiato come rifiuto nelle statistiche di spreco.`,
+                () => {
+                    consumeFood(id, false);
+                    closeConfirmModal();
+                }
+            );
+        }
+
+        function openCategoryModal(categoryName) {
+            activeCategory = categoryName;
+            const config = CATEGORIES[categoryName];
+            document.getElementById('modal-category-title').innerText = categoryName;
+            document.getElementById('modal-category-icon').innerText = config.emoji;
+            renderCategoryItems();
+            document.getElementById('category-modal').classList.remove('hidden');
+        }
+
+        function closeCategoryModal() {
+            document.getElementById('category-modal').classList.add('hidden');
+            activeCategory = null;
+        }
+
+        function renderCategoryItems() {
+            if (!activeCategory) return;
+
+            const categoryFoods = window.foods.filter(f => f.category === activeCategory);
+            const grid = document.getElementById('category-items-grid');
+            const emptyState = document.getElementById('category-empty-state');
+            grid.innerHTML = '';
+
+            if (categoryFoods.length === 0) {
+                emptyState.classList.remove('hidden');
+                grid.classList.add('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                grid.classList.remove('hidden');
+
+                categoryFoods.sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
+                categoryFoods.forEach(item => {
+                    grid.insertAdjacentHTML('beforeend', renderFoodCardHtml(item));
+                });
+                lucide.createIcons();
+            }
+        }
+
+        function openFoodModalFromCategory() {
+            const cat = activeCategory;
+            closeCategoryModal();
+            openFoodModal(null, cat);
+        }
+
+        // ================= GESTIONE MODALE KPI INTERATTIVI =================
+        function openKpiModal(kpiType) {
+            activeKpiFilter = kpiType;
+            const titleEl = document.getElementById('modal-kpi-title');
+            const subtitleEl = document.getElementById('modal-kpi-subtitle');
+            const iconWrapper = document.getElementById('modal-kpi-icon-wrapper');
+            const iconEl = document.getElementById('modal-kpi-icon');
+            
+            if (kpiType === 'all') {
+                titleEl.innerText = "Tutti gli Alimenti";
+                subtitleEl.innerText = "L'inventario completo in ordine di scadenza";
+                iconEl.setAttribute('data-lucide', 'package');
+                iconWrapper.className = "text-xl p-2 rounded-xl shadow-sm border flex-shrink-0 flex items-center justify-center border-brand-200 bg-brand-50 text-brand-600 dark:bg-brand-950/40 dark:text-brand-400";
+            } else if (kpiType === 'safe') {
+                titleEl.innerText = "Alimenti al Sicuro";
+                subtitleEl.innerText = "Cibi con scadenza superiore a 3 giorni";
+                iconEl.setAttribute('data-lucide', 'shield-check');
+                iconWrapper.className = "text-xl p-2 rounded-xl shadow-sm border flex-shrink-0 flex items-center justify-center border-emerald-200 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400";
+            } else if (kpiType === 'expiring') {
+                titleEl.innerText = "Alimenti in Scadenza";
+                subtitleEl.innerText = "Consumare con urgenza (scadenza entro 3 giorni)";
+                iconEl.setAttribute('data-lucide', 'clock');
+                iconWrapper.className = "text-xl p-2 rounded-xl shadow-sm border flex-shrink-0 flex items-center justify-center border-amber-200 bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400";
+            } else if (kpiType === 'expired') {
+                titleEl.innerText = "Alimenti Scaduti";
+                subtitleEl.innerText = "Attenzione! Rimuovere o differenziare questi cibi";
+                iconEl.setAttribute('data-lucide', 'alert-triangle');
+                iconWrapper.className = "text-xl p-2 rounded-xl shadow-sm border flex-shrink-0 flex items-center justify-center border-rose-200 bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400";
+            }
+
+            renderKpiItems();
+            document.getElementById('kpi-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeKpiModal() {
+            document.getElementById('kpi-modal').classList.add('hidden');
+            activeKpiFilter = null;
+        }
+
+        function renderKpiItems() {
+            if (!activeKpiFilter) return;
+
+            const grid = document.getElementById('kpi-items-grid');
+            const emptyState = document.getElementById('kpi-empty-state');
+            grid.innerHTML = '';
+
+            let kpiFoods = window.foods.filter(f => {
+                const days = getDaysToExpiry(f.expiry);
+                if (activeKpiFilter === 'all') return true;
+                if (activeKpiFilter === 'safe') return days > 3;
+                if (activeKpiFilter === 'expiring') return days > 0 && days <= 3;
+                if (activeKpiFilter === 'expired') return days <= 0;
+                return true;
+            });
+
+            if (kpiFoods.length === 0) {
+                emptyState.classList.remove('hidden');
+                grid.classList.add('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                grid.classList.remove('hidden');
+
+                // Ordina per scadenza
+                kpiFoods.sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
+                kpiFoods.forEach(item => {
+                    grid.insertAdjacentHTML('beforeend', renderFoodCardHtml(item));
+                });
+                lucide.createIcons();
+            }
+        }
+
+        // SISTEMA DI CONFERMA MODALE
+        function openConfirmModal(title, description, onConfirm) {
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-description').innerText = description;
+            confirmActionCallback = onConfirm;
+            document.getElementById('confirm-action-btn').onclick = () => {
+                if (confirmActionCallback) confirmActionCallback();
+            };
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            confirmActionCallback = null;
+        }
+
+        // ================= GESTIONE BACKUP (LOCAL FALLBACK) =================
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ foods: window.foods, statsHistory: window.statsHistory }));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `FrigoTracker_Backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast("Backup scaricato con successo!");
+            document.getElementById('settings-menu').classList.add('hidden');
+        }
+
+        function toggleMenu(menuId) {
+            const menu = document.getElementById(menuId);
+            menu.classList.toggle('hidden');
+        }
+
+        function closeSettingsMenuOnOutsideClick(event) {
+            const container = document.getElementById('settings-menu-container');
+            const menu = document.getElementById('settings-menu');
+            if (container && !container.contains(event.target)) {
+                menu.classList.add('hidden');
+            }
+        }
+
+        // ================= STATISTICHE E GRAFICI (CHART.JS) =================
+        function updateStatsKPIs() {
+            document.getElementById('kpi-consumed').innerText = window.statsHistory.consumed;
+            document.getElementById('kpi-wasted').innerText = window.statsHistory.wasted;
+
+            const totalSim = window.statsHistory.consumed + window.statsHistory.wasted;
+            const efficiency = totalSim > 0 ? Math.round((window.statsHistory.consumed / totalSim) * 100) : 100;
+            
+            const kpiEfficiency = document.getElementById('kpi-efficiency');
+            kpiEfficiency.innerText = `${efficiency}%`;
+
+            if (efficiency >= 80) {
+                kpiEfficiency.className = "text-3xl sm:text-4xl font-extrabold text-emerald-500 mt-2";
+            } else if (efficiency >= 50) {
+                kpiEfficiency.className = "text-3xl sm:text-4xl font-extrabold text-amber-500 mt-2";
+            } else {
+                kpiEfficiency.className = "text-3xl sm:text-4xl font-extrabold text-rose-500 mt-2";
+            }
+        }
+
+        function renderCharts() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const labelColor = isDark ? '#94a3b8' : '#64748b';
+            const gridColor = isDark ? '#1e293b' : '#e2e8f0';
+
+            // --- Grafico Ciambella: Consumo / Spreco ---
+            if (ratioChart) {
+                ratioChart.destroy();
+            }
+
+            const ratioCtx = document.getElementById('ratioChart').getContext('2d');
+            const totalActions = window.statsHistory.consumed + window.statsHistory.wasted;
+
+            if (totalActions === 0) {
+                ratioChart = new Chart(ratioCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Nessun dato'],
+                        datasets: [{
+                            data: [1],
+                            backgroundColor: [isDark ? '#334155' : '#cbd5e1']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: true, labels: { color: labelColor } } }
+                    }
+                });
+            } else {
+                ratioChart = new Chart(ratioCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Consumati', 'Sprecati'],
+                        datasets: [{
+                            data: [window.statsHistory.consumed, window.statsHistory.wasted],
+                            backgroundColor: ['#10b981', '#f43f5e'],
+                            borderColor: isDark ? '#0f172a' : '#ffffff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: labelColor,
+                                    font: { family: 'Inter', size: 11 }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // --- Grafico a Barre: Categorie ---
+            if (categoryChart) {
+                categoryChart.destroy();
+            }
+
+            const categoryLabels = Object.keys(CATEGORIES);
+            const categoryData = categoryLabels.map(cat => window.foods.filter(f => f.category === cat).length);
+
+            const catCtx = document.getElementById('categoryChart').getContext('2d');
+            categoryChart = new Chart(catCtx, {
+                type: 'bar',
+                data: {
+                    labels: categoryLabels.map(cat => `${CATEGORIES[cat].emoji}`),
+                    datasets: [{
+                        label: 'Articoli',
+                        data: categoryData,
+                        backgroundColor: '#0ea5e9',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: labelColor, font: { family: 'Inter', size: 14 } }
+                        },
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: { 
+                                stepSize: 1, 
+                                precision: 0, 
+                                color: labelColor,
+                                font: { family: 'Inter', size: 10 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ================= SISTEMA TOAST =================
+        function showToast(message, iconName = "check") {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-message');
+            const iconEl = document.getElementById('toast-icon');
+
+            msgEl.innerText = message;
+            iconEl.setAttribute('data-lucide', iconName);
+            lucide.createIcons();
+
+            toast.className = "fixed top-4 left-4 right-4 sm:top-auto sm:bottom-5 sm:right-5 sm:left-auto z-50 flex items-center space-x-2 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl opacity-100 transform translate-y-0 transition-all duration-300 dark:bg-white dark:text-slate-950";
+
+            setTimeout(() => {
+                toast.className = "fixed top-4 left-4 right-4 sm:top-auto sm:bottom-5 sm:right-5 sm:left-auto z-50 flex items-center space-x-2 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl opacity-0 transform translate-y-[-20px] sm:translate-y-4 pointer-events-none transition-all duration-300 dark:bg-white dark:text-slate-950";
+            }, 3000);
+        }
+
+        // ================= CLEANER HTML =================
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+
+        // ESPOSIZIONE GLOBALE PER COMPATIBILITÀ MODULI
+        window.renderDashboard = renderDashboard;
+        window.updateStatsKPIs = updateStatsKPIs;
+        window.renderCharts = renderCharts;
+        window.renderCategoryItems = renderCategoryItems;
+        window.renderKpiItems = renderKpiItems;
+        window.showToast = showToast;
+    </script>
+
+    <!-- ================= IMPLEMENTAZIONE LOGICA DATABASE FIREBASE (MODULE) ================= -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ================= CONFIGURAZIONI GLOBALI FIREBASE =================
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'frigotracker-app';
+        let db = null;
+        let auth = null;
+        let firebaseUser = null;
+        let firebaseActive = false;
+        let activeFridgeId = null; 
+
+        // Sottoscrizioni Firestore attive
+        let unsubscribeFoods = null;
+        let unsubscribeHistory = null;
+
+        // Inizializza modulo Firebase se configurazione esistente
+        async function checkAndInitFirebase() {
+            let config = null;
+
+            // 1. Verifica la configurazione dell'ambiente di runtime
+            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                config = JSON.parse(__firebase_config);
+            } 
+            // 2. Altrimenti recupera dal LocalStorage
+            else if (localStorage.getItem('frigotracker_firebase_config')) {
+                config = JSON.parse(localStorage.getItem('frigotracker_firebase_config'));
+            }
+
+            if (config) {
+                await bootFirebase(config);
+            } else {
+                updateCloudUI('disconnected');
+                window.renderDashboard();
+            }
+        }
+
+        async function bootFirebase(config) {
+            updateCloudUI('connecting');
+            try {
+                const app = initializeApp(config);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // Autenticazione (Regola 3)
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        firebaseUser = user;
+                        firebaseActive = true;
+
+                        // Determina quale frigo visualizzare:
+                        const savedSharedCode = localStorage.getItem('frigotracker_shared_code');
+                        activeFridgeId = savedSharedCode ? savedSharedCode : user.uid;
+
+                        updateCloudUI('connected');
+                        setupFirestoreListeners();
+                    } else {
+                        firebaseActive = false;
+                        updateCloudUI('disconnected');
+                        window.renderDashboard();
+                    }
+                });
+            } catch (err) {
+                console.error("Firebase Initialization Error:", err);
+                updateCloudUI('error');
+                window.showToast("Errore di connessione a Firebase", "alert-triangle");
+            }
+        }
+
+        // Configura ascoltatori in tempo reale (Regole 1 e 2 per percorsi pubblici condivisibili)
+        function setupFirestoreListeners() {
+            if (unsubscribeFoods) unsubscribeFoods();
+            if (unsubscribeHistory) unsubscribeHistory();
+
+            if (!db || !firebaseActive || !auth.currentUser) return;
+
+            // Sottoscrizione Alimenti (Usa percorso pubblico per condivisione - Regola 1 & 2)
+            const foodsColRef = collection(db, 'artifacts', appId, 'public', 'data', 'foods');
+            
+            unsubscribeFoods = onSnapshot(foodsColRef, (snapshot) => {
+                window.foods = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    // Filtra in memoria JavaScript (Regola 2)
+                    if (data.fridgeId === activeFridgeId) {
+                        window.foods.push({ id: doc.id, ...data });
+                    }
+                });
+                window.renderDashboard();
+                if (window.activeKpiFilter) window.renderKpiItems();
+                if (window.activeCategory) window.renderCategoryItems();
+            }, (error) => {
+                console.error("Firestore onSnapshot Foods Error:", error);
+                window.showToast("Sincronizzazione fallita per gli alimenti", "alert-triangle");
+            });
+
+            // Sottoscrizione Storico Statistiche (Documento pubblico)
+            const statsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', activeFridgeId);
+            unsubscribeHistory = onSnapshot(statsDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    window.statsHistory = docSnap.data();
+                } else {
+                    window.statsHistory = { consumed: 0, wasted: 0 };
+                    setDoc(statsDocRef, window.statsHistory).catch(err => console.error(err));
+                }
+                window.updateStatsKPIs();
+                if (window.currentTab === 'stats') window.renderCharts();
+            }, (error) => {
+                console.error("Firestore onSnapshot Stats Error:", error);
+            });
+        }
+
+        // ================= INTERFACCIA DI CONFIGURAZIONE CLOUD =================
+        function updateCloudUI(state) {
+            const icon = document.getElementById('cloud-status-icon');
+            const text = document.getElementById('cloud-status-text');
+
+            const stateUnconfigured = document.getElementById('cloud-state-unconfigured');
+            const stateConnecting = document.getElementById('cloud-state-connecting');
+            const stateConnected = document.getElementById('cloud-state-connected');
+            const banner = document.getElementById('shared-fridge-banner');
+
+            if (icon) {
+                icon.setAttribute('class', 'w-5 h-5 transition-all duration-300');
+            }
+
+            if (state === 'disconnected') {
+                if (icon) {
+                    icon.setAttribute('data-lucide', 'cloud-off');
+                    icon.classList.add('text-slate-400');
+                }
+                text.innerText = "Locale";
+
+                stateUnconfigured.classList.remove('hidden');
+                stateConnecting.classList.add('hidden');
+                stateConnected.classList.add('hidden');
+                banner.classList.add('hidden');
+            } 
+            else if (state === 'connecting') {
+                if (icon) {
+                    icon.setAttribute('data-lucide', 'cloud');
+                    icon.classList.add('text-amber-500', 'animate-pulse');
+                }
+                text.innerText = "Connessione...";
+
+                stateUnconfigured.classList.add('hidden');
+                stateConnecting.classList.remove('hidden');
+                stateConnected.classList.add('hidden');
+            } 
+            else if (state === 'connected') {
+                if (icon) {
+                    icon.setAttribute('data-lucide', 'cloud-lightning');
+                    icon.classList.add('text-emerald-500');
+                }
+                text.innerText = "Sincronizzato";
+
+                stateUnconfigured.classList.add('hidden');
+                stateConnecting.classList.add('hidden');
+                stateConnected.classList.remove('hidden');
+
+                if (firebaseUser) {
+                    document.getElementById('personal-fridge-code').innerText = firebaseUser.uid;
+                }
+
+                if (activeFridgeId && firebaseUser && activeFridgeId !== firebaseUser.uid) {
+                    banner.classList.remove('hidden');
+                    document.getElementById('shared-fridge-banner-code').innerText = activeFridgeId;
+                } else {
+                    banner.classList.add('hidden');
+                }
+            } 
+            else if (state === 'error') {
+                if (icon) {
+                    icon.setAttribute('data-lucide', 'cloud-off');
+                    icon.classList.add('text-rose-500');
+                }
+                text.innerText = "Errore Cloud";
+
+                stateUnconfigured.classList.remove('hidden');
+                stateConnecting.classList.add('hidden');
+                stateConnected.classList.add('hidden');
+            }
+            lucide.createIcons();
+        }
+
+        window.openCloudModal = function() {
+            document.getElementById('cloud-modal').classList.remove('hidden');
+        }
+
+        window.closeCloudModal = function() {
+            document.getElementById('cloud-modal').classList.add('hidden');
+        }
+
+        window.saveCloudConfig = async function() {
+            const inputVal = document.getElementById('cloud-config-input').value.trim();
+            if (!inputVal) {
+                window.showToast("Inserisci un file JSON valido!", "alert-triangle");
+                return;
+            }
+
+            try {
+                const config = JSON.parse(inputVal);
+                if (!config.apiKey || !config.projectId) {
+                    window.showToast("Configurazione JSON mancante di campi chiave!", "alert-triangle");
+                    return;
+                }
+
+                localStorage.setItem('frigotracker_firebase_config', JSON.stringify(config));
+                await bootFirebase(config);
+                window.showToast("Configurazione Cloud salvata!");
+            } catch (err) {
+                window.showToast("Formato JSON non valido!", "alert-triangle");
+            }
+        }
+
+        window.copyPersonalFridgeCode = function() {
+            if (firebaseUser) {
+                const code = firebaseUser.uid;
+                const textarea = document.createElement('textarea');
+                textarea.value = code;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    window.showToast("Codice copiato!", "clipboard");
+                } catch (err) {
+                    window.showToast("Impossibile copiare il codice", "alert-triangle");
+                }
+                document.body.removeChild(textarea);
+            }
+        }
+
+        window.connectSharedFridge = function() {
+            const codeInput = document.getElementById('shared-fridge-input').value.trim();
+            if (!codeInput) {
+                window.showToast("Inserisci un codice valido!", "alert-triangle");
+                return;
+            }
+
+            if (firebaseUser && codeInput === firebaseUser.uid) {
+                window.showToast("Questo è il tuo codice personale!", "alert-triangle");
+                return;
+            }
+
+            localStorage.setItem('frigotracker_shared_code', codeInput);
+            activeFridgeId = codeInput;
+            setupFirestoreListeners();
+            closeCloudModal();
+            window.showToast("Frigo condiviso collegato!");
+        }
+
+        window.disconnectSharedFridge = function() {
+            localStorage.removeItem('frigotracker_shared_code');
+            if (firebaseUser) {
+                activeFridgeId = firebaseUser.uid;
+            }
+            setupFirestoreListeners();
+            window.showToast("Ritornato al frigo personale.");
+        }
+
+        window.disconnectCloud = function() {
+            localStorage.removeItem('frigotracker_firebase_config');
+            localStorage.removeItem('frigotracker_shared_code');
+            firebaseActive = false;
+            activeFridgeId = null;
+            db = null;
+            auth = null;
+
+            if (unsubscribeFoods) unsubscribeFoods();
+            if (unsubscribeHistory) unsubscribeHistory();
+
+            initLocalStorage();
+            updateCloudUI('disconnected');
+            closeCloudModal();
+            window.showToast("Cloud disattivato. Dati memorizzati localmente.");
+        }
+
+        // Avvio controllo Firebase
+        checkAndInitFirebase();
+
+        // ================= LOGICA OPERATIVA PRINCIPALE (SALVATAGGIO / AGGIORNAMENTO / ELIMINAZIONE) =================
+
+        window.saveFood = async function(event) {
+            event.preventDefault();
+
+            const id = document.getElementById('food-id').value;
+            const name = document.getElementById('food-name').value.trim();
+            const category = document.getElementById('food-category').value;
+            const quantity = document.getElementById('food-quantity').value.trim();
+            const expiry = document.getElementById('food-expiry').value;
+            const notes = document.getElementById('food-notes').value.trim();
+
+            if (!name || !category || !quantity || !expiry) {
+                window.showToast("Compila tutti i campi richiesti!", "alert-triangle");
+                return;
+            }
+
+            const foodPayload = { name, category, quantity, expiry, notes };
+
+            if (firebaseActive && db && auth && auth.currentUser) {
+                try {
+                    if (id) {
+                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'foods', id);
+                        await updateDoc(docRef, foodPayload);
+                        window.showToast("Alimento modificato nel Cloud!");
+                    } else {
+                        const foodsColRef = collection(db, 'artifacts', appId, 'public', 'data', 'foods');
+                        await addDoc(foodsColRef, { fridgeId: activeFridgeId, ...foodPayload });
+                        window.showToast("Alimento aggiunto al Cloud!");
+                    }
+                } catch (err) {
+                    console.error("Firestore Write Error:", err);
+                    window.showToast("Errore di scrittura nel Cloud", "alert-triangle");
+                }
+            } else {
+                // Modalità Locale fallback
+                if (id) {
+                    const index = window.foods.findIndex(f => f.id === id);
+                    if (index !== -1) {
+                        window.foods[index] = { id, ...foodPayload };
+                        window.showToast("Alimento modificato localmente!");
+                    }
+                } else {
+                    const newFood = {
+                        id: crypto.randomUUID(),
+                        ...foodPayload
+                    };
+                    window.foods.push(newFood);
+                    window.showToast("Alimento aggiunto localmente!");
+                }
+                saveFoods();
+                window.renderDashboard();
+            }
+
+            closeFoodModal();
+            if (window.activeCategory) {
+                window.renderCategoryItems();
+            }
+            if (window.activeKpiFilter) {
+                window.renderKpiItems();
+            }
+        }
+
+        window.consumeFood = async function(id, wasConsumed) {
+            const item = window.foods.find(f => f.id === id);
+            if (!item) return;
+
+            // Aggiorna statistiche locali in base all'azione
+            if (wasConsumed) {
+                window.statsHistory.consumed++;
+                window.showToast(`"${item.name}" consumato! Gnam!`, "smile");
+            } else {
+                window.statsHistory.wasted++;
+                window.showToast(`"${item.name}" buttato via.`, "frown");
+            }
+
+            if (firebaseActive && db && auth && auth.currentUser) {
+                try {
+                    // Cancella l'alimento dal Cloud
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'foods', id);
+                    await deleteDoc(docRef);
+
+                    // Salva lo storico aggiornato nel Cloud
+                    const statsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', activeFridgeId);
+                    await setDoc(statsDocRef, window.statsHistory);
+                } catch (err) {
+                    console.error("Firestore Delete/Stats Error:", err);
+                    window.showToast("Errore durante l'azione nel Cloud", "alert-triangle");
+                }
+            } else {
+                // Modalità Locale fallback
+                const index = window.foods.findIndex(f => f.id === id);
+                if (index !== -1) {
+                    window.foods.splice(index, 1);
+                }
+                saveFoods();
+                saveHistory();
+                window.renderDashboard();
+                if (window.activeCategory) {
+                    window.renderCategoryItems();
+                }
+                if (window.activeKpiFilter) {
+                    window.renderKpiItems();
+                }
+            }
+        }
+
+        window.importData = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed.foods && Array.isArray(parsed.foods)) {
+                        if (firebaseActive && db && auth && auth.currentUser) {
+                            // Importazione di massa nel Cloud
+                            const foodsColRef = collection(db, 'artifacts', appId, 'public', 'data', 'foods');
+                            for (let item of parsed.foods) {
+                                const cleanItem = {
+                                    fridgeId: activeFridgeId,
+                                    name: item.name || '',
+                                    category: item.category || 'Altro',
+                                    quantity: item.quantity || '1 pz',
+                                    expiry: item.expiry || getOffsetDateString(5),
+                                    notes: item.notes || ''
+                                };
+                                await addDoc(foodsColRef, cleanItem);
+                            }
+                            if (parsed.statsHistory) {
+                                window.statsHistory = parsed.statsHistory;
+                                const statsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', activeFridgeId);
+                                await setDoc(statsDocRef, window.statsHistory);
+                            }
+                        } else {
+                            // Importazione locale
+                            window.foods = parsed.foods;
+                            if (parsed.statsHistory) {
+                                window.statsHistory = parsed.statsHistory;
+                            }
+                            saveFoods();
+                            saveHistory();
+                            window.renderDashboard();
+                        }
+                        window.showToast("Dati importati e ripristinati correttamente!");
+                    } else {
+                        window.showToast("Formato file non valido!", "alert-triangle");
+                    }
+                } catch (err) {
+                    window.showToast("Errore durante l'importazione", "alert-triangle");
+                }
+            };
+            reader.readAsText(file);
+            document.getElementById('settings-menu').classList.add('hidden');
+        }
+
+        window.openResetModal = function() {
+            document.getElementById('settings-menu').classList.add('hidden');
+            openConfirmModal(
+                "Svuota il Frigorifero",
+                "Questa azione eliminerà DEFINITIVAMENTE tutti gli alimenti registrati in questo frigorifero (sul Cloud o in locale).",
+                async () => {
+                    if (firebaseActive && db && auth && auth.currentUser) {
+                        try {
+                            // Rimuovi tutti i documenti cloud associati a questo frigo
+                            for (let item of window.foods) {
+                                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'foods', item.id);
+                                await deleteDoc(docRef);
+                            }
+                        } catch (err) {
+                            console.error(err);
+                        }
+                    } else {
+                        window.foods = [];
+                        saveFoods();
+                        window.renderDashboard();
+                    }
+                    closeConfirmModal();
+                    window.showToast("Frigorifero svuotato.");
+                }
+            );
+        }
+    </script>
+</body>
+</html>
