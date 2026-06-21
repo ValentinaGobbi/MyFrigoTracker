@@ -15,9 +15,11 @@
                         brand: {
                             50: '#f0f9ff',
                             100: '#e0f2fe',
+                            200: '#bae6fd',
                             500: '#0ea5e9',
                             600: '#0284c7',
                             700: '#0369a1',
+                            950: '#082f49',
                         }
                     }
                 }
@@ -330,7 +332,7 @@
         <p>© 2026 FrigoTracker • Sviluppato per ridurre lo spreco alimentare e risparmiare risorse.</p>
     </footer>
 
-    <!-- ================= MODALE: RISULTATI DELLA RICERCA (NUOVA) ================= -->
+    <!-- ================= MODALE: RISULTATI DELLA RICERCA ================= -->
     <div id="search-modal" class="fixed inset-0 z-50 overflow-y-auto hidden">
         <div class="min-h-screen text-center flex items-end sm:items-center justify-center">
             <!-- Overlay di sfondo -->
@@ -340,7 +342,7 @@
                 <!-- Intestazione Modale -->
                 <div class="px-5 py-4 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
                     <div class="flex items-center space-x-3 overflow-hidden">
-                        <span class="text-xl p-2 rounded-xl shadow-sm border flex-shrink-0 flex items-center justify-center border-brand-200 bg-brand-50 text-brand-600 dark:bg-brand-950/40 dark:text-brand-400">
+                        <span class="text-xl p-2 rounded-xl shadow-sm border flex-shrink-0 flex items-center justify-center border-brand-200 bg-brand-50 text-brand-600 dark:border-slate-850 dark:bg-brand-950/40 dark:text-brand-400">
                             <i data-lucide="search" class="w-5 h-5"></i>
                         </span>
                         <div class="truncate">
@@ -905,7 +907,7 @@
                 return {
                     badge: 'bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-300',
                     border: 'border-l-4 border-orange-500',
-                    icon: 'text-rose-500', // Modificato a rose
+                    icon: 'text-rose-500',
                     desc: days === 1 ? 'Scade domani!' : 'Scade tra 2gg!'
                 };
             } else if (days <= 3) {
@@ -1215,22 +1217,22 @@
                 titleEl.innerText = "Tutti gli Alimenti";
                 subtitleEl.innerText = "L'inventario completo in ordine di scadenza";
                 iconEl.setAttribute('data-lucide', 'package');
-                iconWrapper.className = "text-xl p-2 rounded-xl shadow-sm border flex-shrink-0 flex items-center justify-center border-brand-200 bg-brand-50 text-brand-600 dark:bg-brand-950/40 dark:text-brand-400";
+                iconWrapper.className = "text-xl p-2 rounded-xl shadow-sm border flex-shrink-0 flex items-center justify-center border-brand-200 bg-brand-50 text-brand-600 dark:border-slate-800 dark:bg-brand-950/40 dark:text-brand-400";
             } else if (kpiType === 'safe') {
                 titleEl.innerText = "Alimenti al Sicuro";
                 subtitleEl.innerText = "Cibi con scadenza superiore a 3 giorni";
                 iconEl.setAttribute('data-lucide', 'shield-check');
-                iconWrapper.className = "text-xl p-2 rounded-xl shadow-sm border flex-shrink-0 flex items-center justify-center border-emerald-200 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400";
+                iconWrapper.className = "text-xl p-2 rounded-xl shadow-sm border flex-shrink-0 flex items-center justify-center border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-slate-800 dark:bg-emerald-950/40 dark:text-emerald-400";
             } else if (kpiType === 'expiring') {
                 titleEl.innerText = "Alimenti in Scadenza";
                 subtitleEl.innerText = "Consumare con urgenza (scadenza entro 3 giorni)";
                 iconEl.setAttribute('data-lucide', 'clock');
-                iconWrapper.className = "text-xl p-2 rounded-xl shadow-sm border flex-shrink-0 flex items-center justify-center border-amber-200 bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400";
+                iconWrapper.className = "text-xl p-2 rounded-xl shadow-sm border flex-shrink-0 flex items-center justify-center border-amber-200 bg-amber-50 text-amber-600 dark:border-slate-800 dark:bg-amber-950/40 dark:text-amber-400";
             } else if (kpiType === 'expired') {
                 titleEl.innerText = "Alimenti Scaduti";
                 subtitleEl.innerText = "Attenzione! Rimuovere o differenziare questi cibi";
                 iconEl.setAttribute('data-lucide', 'alert-triangle');
-                iconWrapper.className = "text-xl p-2 rounded-xl shadow-sm border flex-shrink-0 flex items-center justify-center border-rose-200 bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400";
+                iconWrapper.className = "text-xl p-2 rounded-xl shadow-sm border flex-shrink-0 flex items-center justify-center border-rose-200 bg-rose-50 text-rose-600 dark:border-slate-800 dark:bg-rose-950/40 dark:text-rose-400";
             }
 
             renderKpiItems();
@@ -1508,11 +1510,11 @@
         async function checkAndInitFirebase() {
             let config = null;
 
-            // 1. Verifica la configurazione dell'ambiente di runtime
+            // 1. Check runtime environment
             if (typeof __firebase_config !== 'undefined' && __firebase_config) {
                 config = JSON.parse(__firebase_config);
             } 
-            // 2. Altrimenti recupera dal LocalStorage
+            // 2. Otherwise get from LocalStorage
             else if (localStorage.getItem('frigotracker_firebase_config')) {
                 config = JSON.parse(localStorage.getItem('frigotracker_firebase_config'));
             }
@@ -1532,7 +1534,7 @@
                 auth = getAuth(app);
                 db = getFirestore(app);
 
-                // Autenticazione (Regola 3)
+                // Authentication (Rule 3)
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
@@ -1544,7 +1546,7 @@
                         firebaseUser = user;
                         firebaseActive = true;
 
-                        // Determina quale frigo visualizzare:
+                        // Shared fridge code:
                         const savedSharedCode = localStorage.getItem('frigotracker_shared_code');
                         activeFridgeId = savedSharedCode ? savedSharedCode : user.uid;
 
@@ -1563,21 +1565,21 @@
             }
         }
 
-        // Configura ascoltatori in tempo reale (Regole 1 e 2 per percorsi pubblici condivisibili)
+        // Firestore real-time listener (Rules 1 & 2)
         function setupFirestoreListeners() {
             if (unsubscribeFoods) unsubscribeFoods();
             if (unsubscribeHistory) unsubscribeHistory();
 
             if (!db || !firebaseActive || !auth.currentUser) return;
 
-            // Sottoscrizione Alimenti (Usa percorso pubblico per condivisione - Regola 1 & 2)
+            // Foods subscription - Rule 1 & 2
             const foodsColRef = collection(db, 'artifacts', appId, 'public', 'data', 'foods');
             
             unsubscribeFoods = onSnapshot(foodsColRef, (snapshot) => {
                 window.foods = [];
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    // Filtra in memoria JavaScript (Regola 2)
+                    // Filter in memory (Rule 2)
                     if (data.fridgeId === activeFridgeId) {
                         window.foods.push({ id: doc.id, ...data });
                     }
@@ -1590,7 +1592,7 @@
                 window.showToast("Sincronizzazione fallita per gli alimenti", "alert-triangle");
             });
 
-            // Sottoscrizione Storico Statistiche (Documento pubblico)
+            // History stats subscription - Rule 1 & 2
             const statsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', activeFridgeId);
             unsubscribeHistory = onSnapshot(statsDocRef, (docSnap) => {
                 if (docSnap.exists()) {
@@ -1606,7 +1608,7 @@
             });
         }
 
-        // ================= INTERFACCIA DI CONFIGURAZIONE CLOUD =================
+        // ================= CLOUD UI CONTROLLER =================
         function updateCloudUI(state) {
             const icon = document.getElementById('cloud-status-icon');
             const text = document.getElementById('cloud-status-text');
@@ -1773,10 +1775,10 @@
             window.showToast("Cloud disattivato. Dati memorizzati localmente.");
         }
 
-        // Avvio controllo Firebase
+        // Run checking
         checkAndInitFirebase();
 
-        // ================= LOGICA OPERATIVA PRINCIPALE (SALVATAGGIO / AGGIORNAMENTO / ELIMINAZIONE) =================
+        // ================= MAIN CORE EVENTS =================
 
         window.saveFood = async function(event) {
             event.preventDefault();
@@ -1811,7 +1813,7 @@
                     window.showToast("Errore di scrittura nel Cloud", "alert-triangle");
                 }
             } else {
-                // Modalità Locale fallback
+                // Local mode
                 if (id) {
                     const index = window.foods.findIndex(f => f.id === id);
                     if (index !== -1) {
@@ -1843,7 +1845,6 @@
             const item = window.foods.find(f => f.id === id);
             if (!item) return;
 
-            // Aggiorna statistiche locali in base all'azione
             if (wasConsumed) {
                 window.statsHistory.consumed++;
                 window.showToast(`"${item.name}" consumato! Gnam!`, "smile");
@@ -1854,11 +1855,9 @@
 
             if (firebaseActive && db && auth && auth.currentUser) {
                 try {
-                    // Cancella l'alimento dal Cloud
                     const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'foods', id);
                     await deleteDoc(docRef);
 
-                    // Salva lo storico aggiornato nel Cloud
                     const statsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', activeFridgeId);
                     await setDoc(statsDocRef, window.statsHistory);
                 } catch (err) {
@@ -1866,7 +1865,7 @@
                     window.showToast("Errore durante l'azione nel Cloud", "alert-triangle");
                 }
             } else {
-                // Modalità Locale fallback
+                // Local mode
                 const index = window.foods.findIndex(f => f.id === id);
                 if (index !== -1) {
                     window.foods.splice(index, 1);
@@ -1893,7 +1892,6 @@
                     const parsed = JSON.parse(e.target.result);
                     if (parsed.foods && Array.isArray(parsed.foods)) {
                         if (firebaseActive && db && auth && auth.currentUser) {
-                            // Importazione di massa nel Cloud
                             const foodsColRef = collection(db, 'artifacts', appId, 'public', 'data', 'foods');
                             for (let item of parsed.foods) {
                                 const cleanItem = {
@@ -1912,7 +1910,6 @@
                                 await setDoc(statsDocRef, window.statsHistory);
                             }
                         } else {
-                            // Importazione locale
                             window.foods = parsed.foods;
                             if (parsed.statsHistory) {
                                 window.statsHistory = parsed.statsHistory;
@@ -1941,7 +1938,6 @@
                 async () => {
                     if (firebaseActive && db && auth && auth.currentUser) {
                         try {
-                            // Rimuovi tutti i documenti cloud associati a questo frigo
                             for (let item of window.foods) {
                                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'foods', item.id);
                                 await deleteDoc(docRef);
