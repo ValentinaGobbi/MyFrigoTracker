@@ -299,7 +299,7 @@
                 </div>
             </div>
 
-            <!-- BLOCCO GRAFICI -->
+            <!-- PRIMO BLOCCO GRAFICI -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
                 <!-- Grafico a Ciambella Consumo / Spreco -->
                 <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -320,6 +320,57 @@
                     </h3>
                     <div class="relative h-56 sm:h-64">
                         <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECONDO BLOCCO GRAFICI AGGIUNTIVI -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mt-6 sm:mt-8">
+                <!-- Grafico a barre Categorie più Aggiunte (Verde) -->
+                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                        <h3 class="text-sm sm:text-md font-bold flex items-center gap-2">
+                            <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-500"></i>
+                            <span>Frequenza di Aggiunta per Categoria</span>
+                        </h3>
+                        <!-- Selettore per reset automatico -->
+                        <div class="flex items-center space-x-1.5 self-end sm:self-auto">
+                            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Reset:</span>
+                            <select id="added-reset-interval" onchange="updateResetInterval('added', this.value)" class="text-[11px] font-semibold px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-brand-500 transition-all cursor-pointer">
+                                <option value="never">Mai</option>
+                                <option value="1">Ogni mese</option>
+                                <option value="3">Ogni 3 mesi</option>
+                                <option value="6">Ogni 6 mesi</option>
+                                <option value="12">Ogni anno</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="relative h-56 sm:h-64">
+                        <canvas id="addedChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Grafico a barre Categorie più Buttate (Rosso) -->
+                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                        <h3 class="text-sm sm:text-md font-bold flex items-center gap-2">
+                            <i data-lucide="trash-2" class="w-5 h-5 text-rose-500"></i>
+                            <span>Categorie più frequentemente buttate</span>
+                        </h3>
+                        <!-- Selettore per reset automatico -->
+                        <div class="flex items-center space-x-1.5 self-end sm:self-auto">
+                            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Reset:</span>
+                            <select id="wasted-reset-interval" onchange="updateResetInterval('wasted', this.value)" class="text-[11px] font-semibold px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-brand-500 transition-all cursor-pointer">
+                                <option value="never">Mai</option>
+                                <option value="1">Ogni mese</option>
+                                <option value="3">Ogni 3 mesi</option>
+                                <option value="6">Ogni 6 mesi</option>
+                                <option value="12">Ogni anno</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="relative h-56 sm:h-64">
+                        <canvas id="wastedChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -687,7 +738,13 @@
         window.foods = [];
         window.statsHistory = {
             consumed: 0,
-            wasted: 0
+            wasted: 0,
+            addedByCategory: {},
+            wastedByCategory: {},
+            addedResetInterval: 'never',
+            wastedResetInterval: 'never',
+            lastAddedResetDate: new Date().toISOString(),
+            lastWastedResetDate: new Date().toISOString()
         };
         window.currentTab = 'dashboard';
         window.activeCategory = null;
@@ -714,6 +771,8 @@
         // Riferimenti ai Grafici
         let ratioChart = null;
         let categoryChart = null;
+        let addedChart = null;
+        let wastedChart = null;
 
         // Inizializzazione dell'Applicazione
         window.addEventListener('DOMContentLoaded', () => {
@@ -724,23 +783,16 @@
             // Gestione dei click fuori dal menu
             document.addEventListener('click', closeSettingsMenuOnOutsideClick);
             
+            // Sincronizza i selettori di reset ed esegui il controllo iniziale
+            syncResetIntervalDropdowns();
+            window.checkAndPerformAutoResets();
+            
             // Rendering iniziale
             renderDashboard();
             updateStatsKPIs();
         });
 
         // ================= CONTROLLER DEL TEMA =================
-        function applyThemeOnLoad() {
-            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-                document.getElementById('theme-icon').setAttribute('data-lucide', 'sun');
-            } else {
-                document.documentElement.classList.remove('dark');
-                document.getElementById('theme-icon').setAttribute('data-lucide', 'moon');
-            }
-            lucide.createIcons();
-        }
-
         function toggleTheme() {
             if (document.documentElement.classList.contains('dark')) {
                 document.documentElement.classList.remove('dark');
@@ -755,6 +807,17 @@
             if (currentTab === 'stats') {
                 renderCharts();
             }
+        }
+
+        function applyThemeOnLoad() {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                document.getElementById('theme-icon').setAttribute('data-lucide', 'sun');
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.getElementById('theme-icon').setAttribute('data-lucide', 'moon');
+            }
+            lucide.createIcons();
         }
 
         // ================= CAMBIO SCHEDE (TABS) =================
@@ -786,6 +849,7 @@
                 if (mobileStats) mobileStats.className = "flex flex-col items-center justify-center text-brand-500 dark:text-brand-400 transition-colors py-1";
                 
                 updateStatsKPIs();
+                syncResetIntervalDropdowns(); // Allinea i dropdown con lo stato attuale
                 renderCharts();
             }
         }
@@ -808,10 +872,23 @@
 
             if (localStorage.getItem('frigotracker_history')) {
                 window.statsHistory = JSON.parse(localStorage.getItem('frigotracker_history'));
+                if (!window.statsHistory.addedByCategory) window.statsHistory.addedByCategory = {};
+                if (!window.statsHistory.wastedByCategory) window.statsHistory.wastedByCategory = {};
             } else {
-                window.statsHistory = { consumed: 12, wasted: 3 };
+                window.statsHistory = { 
+                    consumed: 12, 
+                    wasted: 3,
+                    addedByCategory: { 'Latticini': 5, 'Verdura': 8, 'Frutta': 4 },
+                    wastedByCategory: { 'Verdura': 2, 'Latticini': 1 }
+                };
                 saveHistory();
             }
+
+            // Inizializza i campi di reset storici se assenti
+            if (!window.statsHistory.addedResetInterval) window.statsHistory.addedResetInterval = 'never';
+            if (!window.statsHistory.wastedResetInterval) window.statsHistory.wastedResetInterval = 'never';
+            if (!window.statsHistory.lastAddedResetDate) window.statsHistory.lastAddedResetDate = new Date().toISOString();
+            if (!window.statsHistory.lastWastedResetDate) window.statsHistory.lastWastedResetDate = new Date().toISOString();
         }
 
         function saveFoods() {
@@ -1021,7 +1098,7 @@
             applyFilters();
         }
 
-        // Apre il popup quando i filtri cambiano sulla dashboard
+        // Abre il popup quando i filtri cambiano sulla dashboard
         function onDashboardFilterChange() {
             const searchVal = document.getElementById('search-input').value.trim();
             const filterExpiry = document.getElementById('filter-expiry').value;
@@ -1319,6 +1396,94 @@
             }
         }
 
+        // ================= SISTEMA RESET AUTOMATICO STATISTICHE =================
+        function monthsDiff(d1, d2) {
+            let months = (d2.getFullYear() - d1.getFullYear()) * 12;
+            months -= d1.getMonth();
+            months += d2.getMonth();
+            if (d2.getDate() < d1.getDate()) {
+                months--;
+            }
+            return months <= 0 ? 0 : months;
+        }
+
+        window.checkAndPerformAutoResets = function() {
+            if (!window.statsHistory) return;
+            let changed = false;
+            const now = new Date();
+
+            // Reset Aggiunte
+            const addedInterval = window.statsHistory.addedResetInterval || 'never';
+            if (addedInterval !== 'never') {
+                const lastReset = new Date(window.statsHistory.lastAddedResetDate || now);
+                const monthsPassed = monthsDiff(lastReset, now);
+                const limit = parseInt(addedInterval, 10);
+                if (monthsPassed >= limit) {
+                    window.statsHistory.addedByCategory = {};
+                    window.statsHistory.lastAddedResetDate = now.toISOString();
+                    changed = true;
+                    showToast("Reset automatico completato per la frequenza di aggiunta!", "info");
+                }
+            }
+
+            // Reset Buttati
+            const wastedInterval = window.statsHistory.wastedResetInterval || 'never';
+            if (wastedInterval !== 'never') {
+                const lastReset = new Date(window.statsHistory.lastWastedResetDate || now);
+                const monthsPassed = monthsDiff(lastReset, now);
+                const limit = parseInt(wastedInterval, 10);
+                if (monthsPassed >= limit) {
+                    window.statsHistory.wastedByCategory = {};
+                    window.statsHistory.lastWastedResetDate = now.toISOString();
+                    changed = true;
+                    showToast("Reset automatico completato per le categorie buttate!", "info");
+                }
+            }
+
+            if (changed) {
+                saveHistory();
+                if (window.currentTab === 'stats') {
+                    renderCharts();
+                }
+                
+                // Se Firebase è attivo, sincronizza le statistiche modificate dal reset
+                if (window.syncCloudStatsHistory) {
+                    window.syncCloudStatsHistory();
+                }
+            }
+        };
+
+        window.updateResetInterval = async function(type, intervalValue) {
+            if (type === 'added') {
+                window.statsHistory.addedResetInterval = intervalValue;
+                window.statsHistory.lastAddedResetDate = new Date().toISOString();
+            } else if (type === 'wasted') {
+                window.statsHistory.wastedResetInterval = intervalValue;
+                window.statsHistory.lastWastedResetDate = new Date().toISOString();
+            }
+
+            saveHistory();
+            
+            // Invia al Cloud se attivo
+            if (window.syncCloudStatsHistory) {
+                await window.syncCloudStatsHistory();
+            }
+
+            showToast("Impostazione di reset salvata!");
+        };
+
+        function syncResetIntervalDropdowns() {
+            const addedSel = document.getElementById('added-reset-interval');
+            const wastedSel = document.getElementById('wasted-reset-interval');
+            if (addedSel && window.statsHistory.addedResetInterval) {
+                addedSel.value = window.statsHistory.addedResetInterval;
+            }
+            if (wastedSel && window.statsHistory.wastedResetInterval) {
+                wastedSel.value = window.statsHistory.wastedResetInterval;
+            }
+        }
+        window.syncResetIntervalDropdowns = syncResetIntervalDropdowns;
+
         // ================= STATISTICHE E GRAFICI (CHART.JS) =================
         function updateStatsKPIs() {
             document.getElementById('kpi-consumed').innerText = window.statsHistory.consumed;
@@ -1345,9 +1510,7 @@
             const gridColor = isDark ? '#1e293b' : '#e2e8f0';
 
             // --- Grafico Ciambella: Consumo / Spreco ---
-            if (ratioChart) {
-                ratioChart.destroy();
-            }
+            if (ratioChart) ratioChart.destroy();
 
             const ratioCtx = document.getElementById('ratioChart').getContext('2d');
             const totalActions = window.statsHistory.consumed + window.statsHistory.wasted;
@@ -1396,10 +1559,8 @@
                 });
             }
 
-            // --- Grafico a Barre: Categorie ---
-            if (categoryChart) {
-                categoryChart.destroy();
-            }
+            // --- Grafico a Barre: Categorie Attuali ---
+            if (categoryChart) categoryChart.destroy();
 
             const categoryLabels = Object.keys(CATEGORIES);
             const categoryData = categoryLabels.map(cat => window.foods.filter(f => f.category === cat).length);
@@ -1419,9 +1580,83 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: labelColor, font: { family: 'Inter', size: 14 } }
+                        },
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: { 
+                                stepSize: 1, 
+                                precision: 0, 
+                                color: labelColor,
+                                font: { family: 'Inter', size: 10 }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // --- Grafico a Barre: Alimenti Aggiunti (Verde) ---
+            if (addedChart) addedChart.destroy();
+
+            const addedData = categoryLabels.map(cat => (window.statsHistory.addedByCategory && window.statsHistory.addedByCategory[cat]) ? window.statsHistory.addedByCategory[cat] : 0);
+            const addedCtx = document.getElementById('addedChart').getContext('2d');
+            addedChart = new Chart(addedCtx, {
+                type: 'bar',
+                data: {
+                    labels: categoryLabels.map(cat => `${CATEGORIES[cat].emoji}`),
+                    datasets: [{
+                        label: 'Inserimenti',
+                        data: addedData,
+                        backgroundColor: '#10b981', // Verde smeraldo
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: labelColor, font: { family: 'Inter', size: 14 } }
+                        },
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: { 
+                                stepSize: 1, 
+                                precision: 0, 
+                                color: labelColor,
+                                font: { family: 'Inter', size: 10 }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // --- Grafico a Barre: Alimenti Buttati (Rosso) ---
+            if (wastedChart) wastedChart.destroy();
+
+            const wastedData = categoryLabels.map(cat => (window.statsHistory.wastedByCategory && window.statsHistory.wastedByCategory[cat]) ? window.statsHistory.wastedByCategory[cat] : 0);
+            const wastedCtx = document.getElementById('wastedChart').getContext('2d');
+            wastedChart = new Chart(wastedCtx, {
+                type: 'bar',
+                data: {
+                    labels: categoryLabels.map(cat => `${CATEGORIES[cat].emoji}`),
+                    datasets: [{
+                        label: 'Rifiuti',
+                        data: wastedData,
+                        backgroundColor: '#ef4444', // Rosso
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
                     scales: {
                         x: {
                             grid: { display: false },
@@ -1471,7 +1706,23 @@
             );
         }
 
-        // ESPOSIZIONE GLOBALE PER COMPATIBILITÀ MODULI
+        // ESPOSIZIONE GLOBALE PER COMPATIBILITÀ MODULI E CONTESTI DI RUNTIME
+        window.switchTab = switchTab;
+        window.toggleTheme = toggleTheme;
+        window.openFoodModal = openFoodModal;
+        window.closeFoodModal = closeFoodModal;
+        window.confirmDeleteFood = confirmDeleteFood;
+        window.openCategoryModal = openCategoryModal;
+        window.closeCategoryModal = closeCategoryModal;
+        window.openFoodModalFromCategory = openFoodModalFromCategory;
+        window.openKpiModal = openKpiModal;
+        window.closeKpiModal = closeKpiModal;
+        window.toggleMenu = toggleMenu;
+        window.exportData = exportData;
+        window.closeConfirmModal = closeConfirmModal;
+        window.syncExpiryFilter = syncExpiryFilter;
+        window.syncSortFilter = syncSortFilter;
+
         window.renderDashboard = renderDashboard;
         window.updateStatsKPIs = updateStatsKPIs;
         window.renderCharts = renderCharts;
@@ -1480,8 +1731,6 @@
         window.showToast = showToast;
         window.openSearchModalFromDashboard = openSearchModalFromDashboard;
         window.syncAndApplyFilters = syncAndApplyFilters;
-        window.syncExpiryFilter = syncExpiryFilter;
-        window.syncSortFilter = syncSortFilter;
         window.closeSearchModal = closeSearchModal;
         window.onDashboardFilterChange = onDashboardFilterChange;
         window.clearFilters = clearFilters;
@@ -1490,7 +1739,7 @@
 
     <!-- ================= IMPLEMENTAZIONE LOGICA DATABASE FIREBASE (MODULE) ================= -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { initializeApp, getApps, deleteApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -1530,6 +1779,12 @@
         async function bootFirebase(config) {
             updateCloudUI('connecting');
             try {
+                // Previene l'errore "Firebase App named '[DEFAULT]' already exists" rimuovendo istanze attive
+                const activeApps = getApps();
+                for (const activeApp of activeApps) {
+                    await deleteApp(activeApp);
+                }
+
                 const app = initializeApp(config);
                 auth = getAuth(app);
                 db = getFirestore(app);
@@ -1597,11 +1852,35 @@
             unsubscribeHistory = onSnapshot(statsDocRef, (docSnap) => {
                 if (docSnap.exists()) {
                     window.statsHistory = docSnap.data();
+                    if (!window.statsHistory.addedByCategory) window.statsHistory.addedByCategory = {};
+                    if (!window.statsHistory.wastedByCategory) window.statsHistory.wastedByCategory = {};
+                    
+                    // Inizializza i campi di reset storici se assenti
+                    if (!window.statsHistory.addedResetInterval) window.statsHistory.addedResetInterval = 'never';
+                    if (!window.statsHistory.wastedResetInterval) window.statsHistory.wastedResetInterval = 'never';
+                    if (!window.statsHistory.lastAddedResetDate) window.statsHistory.lastAddedResetDate = new Date().toISOString();
+                    if (!window.statsHistory.lastWastedResetDate) window.statsHistory.lastWastedResetDate = new Date().toISOString();
                 } else {
-                    window.statsHistory = { consumed: 0, wasted: 0 };
+                    window.statsHistory = { 
+                        consumed: 0, 
+                        wasted: 0, 
+                        addedByCategory: {}, 
+                        wastedByCategory: {},
+                        addedResetInterval: 'never',
+                        wastedResetInterval: 'never',
+                        lastAddedResetDate: new Date().toISOString(),
+                        lastWastedResetDate: new Date().toISOString()
+                    };
                     setDoc(statsDocRef, window.statsHistory).catch(err => console.error(err));
                 }
                 window.updateStatsKPIs();
+                
+                // Allinea i selettori d'intervallo con il database
+                window.syncResetIntervalDropdowns();
+                
+                // Esegui reset automatico se scaduto
+                window.checkAndPerformAutoResets();
+
                 if (window.currentTab === 'stats') window.renderCharts();
             }, (error) => {
                 console.error("Firestore onSnapshot Stats Error:", error);
@@ -1745,6 +2024,7 @@
             localStorage.setItem('frigotracker_shared_code', codeInput);
             activeFridgeId = codeInput;
             setupFirestoreListeners();
+            updateCloudUI('connected');
             closeCloudModal();
             window.showToast("Frigo condiviso collegato!");
         }
@@ -1755,6 +2035,7 @@
                 activeFridgeId = firebaseUser.uid;
             }
             setupFirestoreListeners();
+            updateCloudUI('connected');
             window.showToast("Ritornato al frigo personale.");
         }
 
@@ -1775,7 +2056,19 @@
             window.showToast("Cloud disattivato. Dati memorizzati localmente.");
         }
 
-        // Run checking
+        // Sincronizza lo stato di reset con Firebase Cloud
+        window.syncCloudStatsHistory = async function() {
+            if (firebaseActive && db && auth && auth.currentUser) {
+                try {
+                    const statsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', activeFridgeId);
+                    await setDoc(statsDocRef, window.statsHistory);
+                } catch (err) {
+                    console.error("Errore salvataggio statistiche nel Cloud:", err);
+                }
+            }
+        };
+
+        // Avvia il controllo di inizializzazione
         checkAndInitFirebase();
 
         // ================= MAIN CORE EVENTS =================
@@ -1804,8 +2097,17 @@
                         await updateDoc(docRef, foodPayload);
                         window.showToast("Alimento modificato nel Cloud!");
                     } else {
+                        // Incrementa statistiche di aggiunta storica
+                        if (!window.statsHistory.addedByCategory) window.statsHistory.addedByCategory = {};
+                        window.statsHistory.addedByCategory[category] = (window.statsHistory.addedByCategory[category] || 0) + 1;
+
                         const foodsColRef = collection(db, 'artifacts', appId, 'public', 'data', 'foods');
                         await addDoc(foodsColRef, { fridgeId: activeFridgeId, ...foodPayload });
+
+                        // Sincronizza lo storico aggiunte nel Cloud
+                        const statsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', activeFridgeId);
+                        await setDoc(statsDocRef, window.statsHistory);
+
                         window.showToast("Alimento aggiunto al Cloud!");
                     }
                 } catch (err) {
@@ -1826,9 +2128,15 @@
                         ...foodPayload
                     };
                     window.foods.push(newFood);
+
+                    // Traccia localmente l'inserimento storico
+                    if (!window.statsHistory.addedByCategory) window.statsHistory.addedByCategory = {};
+                    window.statsHistory.addedByCategory[category] = (window.statsHistory.addedByCategory[category] || 0) + 1;
+
                     window.showToast("Alimento aggiunto localmente!");
                 }
                 saveFoods();
+                saveHistory();
                 window.renderDashboard();
             }
 
@@ -1850,6 +2158,9 @@
                 window.showToast(`"${item.name}" consumato! Gnam!`, "smile");
             } else {
                 window.statsHistory.wasted++;
+                // Traccia la categoria buttata
+                if (!window.statsHistory.wastedByCategory) window.statsHistory.wastedByCategory = {};
+                window.statsHistory.wastedByCategory[item.category] = (window.statsHistory.wastedByCategory[item.category] || 0) + 1;
                 window.showToast(`"${item.name}" buttato via.`, "frown");
             }
 
@@ -1906,6 +2217,8 @@
                             }
                             if (parsed.statsHistory) {
                                 window.statsHistory = parsed.statsHistory;
+                                if (!window.statsHistory.addedByCategory) window.statsHistory.addedByCategory = {};
+                                if (!window.statsHistory.wastedByCategory) window.statsHistory.wastedByCategory = {};
                                 const statsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'history', activeFridgeId);
                                 await setDoc(statsDocRef, window.statsHistory);
                             }
@@ -1913,6 +2226,8 @@
                             window.foods = parsed.foods;
                             if (parsed.statsHistory) {
                                 window.statsHistory = parsed.statsHistory;
+                                if (!window.statsHistory.addedByCategory) window.statsHistory.addedByCategory = {};
+                                if (!window.statsHistory.wastedByCategory) window.statsHistory.wastedByCategory = {};
                             }
                             saveFoods();
                             saveHistory();
