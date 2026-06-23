@@ -70,6 +70,18 @@
         button:active {
             transform: scale(0.98);
         }
+
+        /* Ottimizzazione geometrica per mostrare esattamente 10 categorie su smartphone */
+        @media (max-width: 640px) {
+            .mobile-10-cols {
+                width: 160% !important;
+            }
+        }
+        @media (min-width: 641px) {
+            .mobile-10-cols {
+                width: 800px !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-full flex flex-col transition-colors duration-300 pb-16 md:pb-0">
@@ -267,13 +279,13 @@
                 </div>
             </div>
 
-            <!-- GRIGLIA DELLE CARD CATEGORIA - Ottimizzata per tutti i dispositivi con 3 colonne su smartphone -->
+            <!-- GRIGLIA DELLE CARD CATEGORIA - Adattiva per PC/Tablet, organizzata in 2 colonne su smartphone -->
             <div>
                 <h2 class="text-base sm:text-lg font-bold tracking-tight mb-3 flex items-center gap-2">
                     <i data-lucide="grid" class="w-5 h-5 text-brand-500"></i>
                     <span>Sfoglia Categorie</span>
                 </h2>
-                <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-4" id="categories-grid">
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4" id="categories-grid">
                     <!-- Popolato via JS -->
                 </div>
             </div>
@@ -326,7 +338,7 @@
                     </div>
                 </div>
 
-                <!-- Grafico a barre Categorie (Scrollabile Orizzontalmente, altezza ridotta) -->
+                <!-- Grafico a barre Categorie (Scrollabile Orizzontalmente con 10 elementi subito visibili su mobile) -->
                 <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                     <h3 class="text-sm sm:text-md font-bold mb-4 flex items-center gap-2">
                         <i data-lucide="bar-chart-2" class="w-5 h-5 text-brand-500"></i>
@@ -334,7 +346,7 @@
                     </h3>
                     <!-- Wrapper Scrollabile Orizzontalmente -->
                     <div class="overflow-x-auto pb-2">
-                        <div class="relative h-44 sm:h-52" style="width: 800px;">
+                        <div class="relative h-44 sm:h-52 mobile-10-cols">
                             <canvas id="categoryChart"></canvas>
                         </div>
                     </div>
@@ -343,7 +355,7 @@
 
             <!-- SECONDO BLOCCO GRAFICI AGGIUNTIVI - Altezza ottimizzata -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mt-6 sm:mt-8">
-                <!-- Grafico a barre Categorie più Aggiunte (Scrollabile Orizzontalmente, altezza ridotta) -->
+                <!-- Grafico a barre Categorie più Aggiunte (Scrollabile Orizzontalmente con 10 elementi subito visibili su mobile) -->
                 <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                         <h3 class="text-sm sm:text-md font-bold flex items-center gap-2">
@@ -364,13 +376,13 @@
                     </div>
                     <!-- Wrapper Scrollabile Orizzontalmente -->
                     <div class="overflow-x-auto pb-2">
-                        <div class="relative h-44 sm:h-52" style="width: 800px;">
+                        <div class="relative h-44 sm:h-52 mobile-10-cols">
                             <canvas id="addedChart"></canvas>
                         </div>
                     </div>
                 </div>
 
-                <!-- Grafico a barre Categorie più Buttate (Scrollabile Orizzontalmente, altezza ridotta) -->
+                <!-- Grafico a barre Categorie più Buttate (Scrollabile Orizzontalmente con 10 elementi subito visibili su mobile) -->
                 <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                         <h3 class="text-sm sm:text-md font-bold flex items-center gap-2">
@@ -391,7 +403,7 @@
                     </div>
                     <!-- Wrapper Scrollabile Orizzontalmente -->
                     <div class="overflow-x-auto pb-2">
-                        <div class="relative h-44 sm:h-52" style="width: 800px;">
+                        <div class="relative h-44 sm:h-52 mobile-10-cols">
                             <canvas id="wastedChart"></canvas>
                         </div>
                     </div>
@@ -811,7 +823,7 @@
             // Gestione dei click fuori dal menu
             document.addEventListener('click', closeSettingsMenuOnOutsideClick);
             
-            // Sincronizza i selettori di reset ed esegui il controllo iniziale
+            // Sincronizza i selettori di reset ed esegui le verifiche iniziali
             syncResetIntervalDropdowns();
             window.checkAndPerformAutoResets();
             
@@ -973,13 +985,13 @@
                     }
                 }
 
-                // Layout ottimizzato per 3 colonne su mobile (p-2 sm:p-4, emoji text-2xl sm:text-4xl)
+                // Layout strutturato per 2 colonne su mobile (p-3 sm:p-4, emoji text-3xl sm:text-4xl, leggibilità ottimizzata)
                 const cardHtml = `
-                    <div onclick="openCategoryModal('${cat}')" class="relative group cursor-pointer bg-white dark:bg-slate-900 border ${config.color} p-2 sm:p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 text-center flex flex-col items-center justify-center">
+                    <div onclick="openCategoryModal('${cat}')" class="relative group cursor-pointer bg-white dark:bg-slate-900 border ${config.color} p-3 sm:p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 text-center flex flex-col items-center justify-center">
                         ${alertIndicator}
-                        <span class="text-2xl sm:text-4xl mb-1 sm:mb-2 transition-transform group-hover:scale-110 duration-300">${config.emoji}</span>
-                        <h4 class="font-bold text-[10px] sm:text-sm text-slate-800 dark:text-slate-200 w-full truncate" title="${cat}">${cat}</h4>
-                        <span class="mt-1 sm:mt-2 text-[9px] sm:text-xs font-semibold px-1.5 py-0.5 rounded-full ${badgeClass}">
+                        <span class="text-3xl sm:text-4xl mb-1 sm:mb-2 transition-transform group-hover:scale-110 duration-300">${config.emoji}</span>
+                        <h4 class="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200 w-full truncate" title="${cat}">${cat}</h4>
+                        <span class="mt-1.5 sm:mt-2 text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full ${badgeClass}">
                             ${count} ${count === 1 ? 'art.' : 'artt.'}
                         </span>
                     </div>
@@ -1306,6 +1318,7 @@
             }
         }
 
+        // Apre il form di aggiunta con la categoria corretta
         function openFoodModalFromCategory() {
             const cat = activeCategory;
             closeCategoryModal();
@@ -1960,6 +1973,7 @@
                 text.innerText = "Connessione...";
 
                 stateUnconfigured.classList.add('hidden');
+                stateConnecting.className = "hidden"; // hidden in modal code but show when triggered
                 stateConnecting.classList.remove('hidden');
                 stateConnected.classList.add('hidden');
             } 
