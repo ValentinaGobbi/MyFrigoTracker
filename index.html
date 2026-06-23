@@ -267,13 +267,13 @@
                 </div>
             </div>
 
-            <!-- GRIGLIA DELLE CARD CATEGORIA - Ottimizzata per tutti i dispositivi -->
+            <!-- GRIGLIA DELLE CARD CATEGORIA - Ottimizzata per tutti i dispositivi con 3 colonne su smartphone -->
             <div>
                 <h2 class="text-base sm:text-lg font-bold tracking-tight mb-3 flex items-center gap-2">
                     <i data-lucide="grid" class="w-5 h-5 text-brand-500"></i>
                     <span>Sfoglia Categorie</span>
                 </h2>
-                <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 sm:gap-4" id="categories-grid">
+                <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-4" id="categories-grid">
                     <!-- Popolato via JS -->
                 </div>
             </div>
@@ -313,20 +313,20 @@
                 </div>
             </div>
 
-            <!-- PRIMO BLOCCO GRAFICI -->
+            <!-- PRIMO BLOCCO GRAFICI - Altezza ottimizzata -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-                <!-- Grafico a Ciambella Consumo / Spreco (Non necessita di scroll) -->
+                <!-- Grafico a Ciambella Consumo / Spreco (Non necessita di scroll, altezza ridotta) -->
                 <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <h3 class="text-sm sm:text-md font-bold mb-4 flex items-center gap-2">
                         <i data-lucide="pie-chart" class="w-5 h-5 text-brand-500"></i>
                         <span>Distribuzione Spreco / Consumo</span>
                     </h3>
-                    <div class="relative h-56 sm:h-64 flex justify-center items-center">
+                    <div class="relative h-44 sm:h-52 flex justify-center items-center">
                         <canvas id="ratioChart"></canvas>
                     </div>
                 </div>
 
-                <!-- Grafico a barre Categorie (Scrollabile Orizzontalmente) -->
+                <!-- Grafico a barre Categorie (Scrollabile Orizzontalmente, altezza ridotta) -->
                 <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                     <h3 class="text-sm sm:text-md font-bold mb-4 flex items-center gap-2">
                         <i data-lucide="bar-chart-2" class="w-5 h-5 text-brand-500"></i>
@@ -334,16 +334,16 @@
                     </h3>
                     <!-- Wrapper Scrollabile Orizzontalmente -->
                     <div class="overflow-x-auto pb-2">
-                        <div class="relative h-56 sm:h-64" style="width: 800px;">
+                        <div class="relative h-44 sm:h-52" style="width: 800px;">
                             <canvas id="categoryChart"></canvas>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- SECONDO BLOCCO GRAFICI AGGIUNTIVI -->
+            <!-- SECONDO BLOCCO GRAFICI AGGIUNTIVI - Altezza ottimizzata -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mt-6 sm:mt-8">
-                <!-- Grafico a barre Categorie più Aggiunte (Scrollabile Orizzontalmente) -->
+                <!-- Grafico a barre Categorie più Aggiunte (Scrollabile Orizzontalmente, altezza ridotta) -->
                 <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                         <h3 class="text-sm sm:text-md font-bold flex items-center gap-2">
@@ -364,13 +364,13 @@
                     </div>
                     <!-- Wrapper Scrollabile Orizzontalmente -->
                     <div class="overflow-x-auto pb-2">
-                        <div class="relative h-56 sm:h-64" style="width: 800px;">
+                        <div class="relative h-44 sm:h-52" style="width: 800px;">
                             <canvas id="addedChart"></canvas>
                         </div>
                     </div>
                 </div>
 
-                <!-- Grafico a barre Categorie più Buttate (Scrollabile Orizzontalmente) -->
+                <!-- Grafico a barre Categorie più Buttate (Scrollabile Orizzontalmente, altezza ridotta) -->
                 <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                         <h3 class="text-sm sm:text-md font-bold flex items-center gap-2">
@@ -391,7 +391,7 @@
                     </div>
                     <!-- Wrapper Scrollabile Orizzontalmente -->
                     <div class="overflow-x-auto pb-2">
-                        <div class="relative h-56 sm:h-64" style="width: 800px;">
+                        <div class="relative h-44 sm:h-52" style="width: 800px;">
                             <canvas id="wastedChart"></canvas>
                         </div>
                     </div>
@@ -973,12 +973,13 @@
                     }
                 }
 
+                // Layout ottimizzato per 3 colonne su mobile (p-2 sm:p-4, emoji text-2xl sm:text-4xl)
                 const cardHtml = `
-                    <div onclick="openCategoryModal('${cat}')" class="relative group cursor-pointer bg-white dark:bg-slate-900 border ${config.color} p-3 sm:p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 text-center flex flex-col items-center justify-center">
+                    <div onclick="openCategoryModal('${cat}')" class="relative group cursor-pointer bg-white dark:bg-slate-900 border ${config.color} p-2 sm:p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 text-center flex flex-col items-center justify-center">
                         ${alertIndicator}
-                        <span class="text-3xl sm:text-4xl mb-2 transition-transform group-hover:scale-110 duration-300">${config.emoji}</span>
-                        <h4 class="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200 w-full truncate" title="${cat}">${cat}</h4>
-                        <span class="mt-2 text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full ${badgeClass}">
+                        <span class="text-2xl sm:text-4xl mb-1 sm:mb-2 transition-transform group-hover:scale-110 duration-300">${config.emoji}</span>
+                        <h4 class="font-bold text-[10px] sm:text-sm text-slate-800 dark:text-slate-200 w-full truncate" title="${cat}">${cat}</h4>
+                        <span class="mt-1 sm:mt-2 text-[9px] sm:text-xs font-semibold px-1.5 py-0.5 rounded-full ${badgeClass}">
                             ${count} ${count === 1 ? 'art.' : 'artt.'}
                         </span>
                     </div>
@@ -1603,7 +1604,10 @@
                         label: 'Articoli',
                         data: categoryData,
                         backgroundColor: '#0ea5e9',
-                        borderRadius: 6
+                        borderRadius: 6,
+                        barPercentage: 0.4,
+                        categoryPercentage: 0.6,
+                        maxBarThickness: 16
                     }]
                 },
                 options: {
@@ -1628,7 +1632,7 @@
                 }
             });
 
-            // --- Grafico a Barre: Alimenti Aggiunti (Verde) ---
+            // --- Grafico a Barre: Alimenti Aggiunti (Verde, colonne sottili) ---
             if (addedChart) addedChart.destroy();
 
             const addedData = categoryLabels.map(cat => (window.statsHistory.addedByCategory && window.statsHistory.addedByCategory[cat]) ? window.statsHistory.addedByCategory[cat] : 0);
@@ -1641,7 +1645,10 @@
                         label: 'Inserimenti',
                         data: addedData,
                         backgroundColor: '#10b981', // Verde smeraldo
-                        borderRadius: 6
+                        borderRadius: 6,
+                        barPercentage: 0.4,
+                        categoryPercentage: 0.6,
+                        maxBarThickness: 16
                     }]
                 },
                 options: {
@@ -1666,7 +1673,7 @@
                 }
             });
 
-            // --- Grafico a Barre: Alimenti Buttati (Rosso) ---
+            // --- Grafico a Barre: Alimenti Buttati (Rosso, colonne sottili) ---
             if (wastedChart) wastedChart.destroy();
 
             const wastedData = categoryLabels.map(cat => (window.statsHistory.wastedByCategory && window.statsHistory.wastedByCategory[cat]) ? window.statsHistory.wastedByCategory[cat] : 0);
@@ -1679,7 +1686,10 @@
                         label: 'Rifiuti',
                         data: wastedData,
                         backgroundColor: '#ef4444', // Rosso
-                        borderRadius: 6
+                        borderRadius: 6,
+                        barPercentage: 0.4,
+                        categoryPercentage: 0.6,
+                        maxBarThickness: 16
                     }]
                 },
                 options: {
