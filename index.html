@@ -572,13 +572,15 @@
                                 <option value="Frutta">🍎 Frutta</option>
                                 <option value="Uova">🥚 Uova</option>
                                 <option value="Formaggi">🧀 Formaggi</option>
+                                <option value="Pane">🍞 Pane</option>
+                                <option value="Affettati">🥓 Affettati</option>
                                 <option value="Conserve">🥫 Conserve</option>
-                                <option value="Biscotti">🍪 Biscotti</option>
+                                <option value="Colazione">🥐 Colazione</option>
                                 <option value="Salse">🥣 Salse</option>
                                 <option value="Bevande">🥤 Bevande</option>
+                                <option value="Dolci">🥧 Dolci</option>
                                 <option value="Surgelati">❄️ Surgelati</option>
-                                <option value="Dolci">🍰 Dolci</option>
-                                <option value="Altro">📦 Altro</option>
+                                <option value="Dispensa">📦 Dispensa</option>
                             </select>
                         </div>
                         <div>
@@ -759,13 +761,15 @@
             'Frutta': { emoji: '🍎', color: 'border-red-500 bg-red-50/50 dark:bg-red-950/10' },
             'Uova': { emoji: '🥚', color: 'border-yellow-500 bg-yellow-50/50 dark:bg-yellow-950/10' },
             'Formaggi': { emoji: '🧀', color: 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/10' },
+            'Pane': { emoji: '🍞', color: 'border-amber-700 bg-amber-50/40 dark:bg-amber-950/10' },
+            'Affettati': { emoji: '🥓', color: 'border-red-400 bg-red-50/40 dark:bg-red-950/10' },
             'Conserve': { emoji: '🥫', color: 'border-orange-500 bg-orange-50/50 dark:bg-orange-950/10' },
-            'Biscotti': { emoji: '🍪', color: 'border-amber-600 bg-amber-50/50 dark:bg-amber-950/10' },
+            'Colazione': { emoji: '🥐', color: 'border-amber-600 bg-amber-50/50 dark:bg-amber-950/10' },
             'Salse': { emoji: '🥣', color: 'border-red-400 bg-red-50/50 dark:bg-red-950/10' },
             'Bevande': { emoji: '🥤', color: 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/10' },
+            'Dolci': { emoji: '🥧', color: 'border-pink-500 bg-pink-50/50 dark:bg-pink-950/10' },
             'Surgelati': { emoji: '❄️', color: 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/10' },
-            'Dolci': { emoji: '🍰', color: 'border-pink-500 bg-pink-50/50 dark:bg-pink-950/10' },
-            'Altro': { emoji: '📦', color: 'border-slate-500 bg-slate-50/50 dark:bg-slate-950/10' }
+            'Dispensa': { emoji: '📦', color: 'border-slate-500 bg-slate-50/50 dark:bg-slate-950/10' }
         };
 
         // Riferimenti ai Grafici
@@ -895,6 +899,7 @@
             localStorage.setItem('frigotracker_foods', JSON.stringify(window.foods));
         }
 
+        // ================= RENDERING DELLA DASHBOARD PRINCIPALE =================
         function saveHistory() {
             localStorage.setItem('frigotracker_history', JSON.stringify(window.statsHistory));
         }
@@ -1088,17 +1093,18 @@
             applyFilters();
         }
 
-        function syncExpiryFilter(val) {
+        // Sincronizzazioni filtri di ricerca secondari
+        window.syncExpiryFilter = function(val) {
             document.getElementById('filter-expiry').value = val;
             applyFilters();
         }
 
-        function syncSortFilter(val) {
+        window.syncSortFilter = function(val) {
             document.getElementById('filter-sort').value = val;
             applyFilters();
         }
 
-        // Abre il popup quando i filtri cambiano sulla dashboard
+        // Apre il popup quando i filtri cambiano sulla dashboard
         function onDashboardFilterChange() {
             const searchVal = document.getElementById('search-input').value.trim();
             const filterExpiry = document.getElementById('filter-expiry').value;
@@ -1720,8 +1726,8 @@
         window.toggleMenu = toggleMenu;
         window.exportData = exportData;
         window.closeConfirmModal = closeConfirmModal;
-        window.syncExpiryFilter = syncExpiryFilter;
-        window.syncSortFilter = syncSortFilter;
+        window.syncExpiryFilter = window.syncExpiryFilter;
+        window.syncSortFilter = window.syncSortFilter;
 
         window.renderDashboard = renderDashboard;
         window.updateStatsKPIs = updateStatsKPIs;
@@ -1755,7 +1761,7 @@
         let unsubscribeFoods = null;
         let unsubscribeHistory = null;
 
-        // Inizializza modulo Firebase se configurazione esistente
+        // Inizializza modulo Firebase si configurazione esistente
         async function checkAndInitFirebase() {
             let config = null;
 
@@ -2208,7 +2214,7 @@
                                 const cleanItem = {
                                     fridgeId: activeFridgeId,
                                     name: item.name || '',
-                                    category: item.category || 'Altro',
+                                    category: item.category || 'Dispensa',
                                     quantity: item.quantity || '1 pz',
                                     expiry: item.expiry || getOffsetDateString(5),
                                     notes: item.notes || ''
