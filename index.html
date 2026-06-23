@@ -572,11 +572,11 @@
                                 <option value="Frutta">🍎 Frutta</option>
                                 <option value="Uova">🥚 Uova</option>
                                 <option value="Formaggi">🧀 Formaggi</option>
-                                <option value="Pane">🍞 Pane</option>
                                 <option value="Affettati">🥓 Affettati</option>
-                                <option value="Conserve">🥫 Conserve</option>
-                                <option value="Colazione">🥐 Colazione</option>
+                                <option value="Pane">🍞 Pane</option>
                                 <option value="Salse">🥣 Salse</option>
+                                <option value="Colazione">🥐 Colazione</option>
+                                <option value="Conserve">🥫 Conserve</option>
                                 <option value="Bevande">🥤 Bevande</option>
                                 <option value="Dolci">🥧 Dolci</option>
                                 <option value="Surgelati">❄️ Surgelati</option>
@@ -761,11 +761,11 @@
             'Frutta': { emoji: '🍎', color: 'border-red-500 bg-red-50/50 dark:bg-red-950/10' },
             'Uova': { emoji: '🥚', color: 'border-yellow-500 bg-yellow-50/50 dark:bg-yellow-950/10' },
             'Formaggi': { emoji: '🧀', color: 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/10' },
-            'Pane': { emoji: '🍞', color: 'border-amber-700 bg-amber-50/40 dark:bg-amber-950/10' },
             'Affettati': { emoji: '🥓', color: 'border-red-400 bg-red-50/40 dark:bg-red-950/10' },
-            'Conserve': { emoji: '🥫', color: 'border-orange-500 bg-orange-50/50 dark:bg-orange-950/10' },
-            'Colazione': { emoji: '🥐', color: 'border-amber-600 bg-amber-50/50 dark:bg-amber-950/10' },
+            'Pane': { emoji: '🍞', color: 'border-amber-700 bg-amber-50/40 dark:bg-amber-950/10' },
             'Salse': { emoji: '🥣', color: 'border-red-400 bg-red-50/50 dark:bg-red-950/10' },
+            'Colazione': { emoji: '🥐', color: 'border-amber-600 bg-amber-50/50 dark:bg-amber-950/10' },
+            'Conserve': { emoji: '🥫', color: 'border-orange-500 bg-orange-50/50 dark:bg-orange-950/10' },
             'Bevande': { emoji: '🥤', color: 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/10' },
             'Dolci': { emoji: '🥧', color: 'border-pink-500 bg-pink-50/50 dark:bg-pink-950/10' },
             'Surgelati': { emoji: '❄️', color: 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/10' },
@@ -1104,7 +1104,7 @@
             applyFilters();
         }
 
-        // Apre il popup quando i filtri cambiano sulla dashboard
+        // Aperto il popup quando i filtri cambiano sulla dashboard
         function onDashboardFilterChange() {
             const searchVal = document.getElementById('search-input').value.trim();
             const filterExpiry = document.getElementById('filter-expiry').value;
@@ -1227,6 +1227,7 @@
             document.getElementById('food-modal').classList.remove('hidden');
         }
 
+        // ================= GESTIONE MODALI UI =================
         function closeFoodModal() {
             document.getElementById('food-modal').classList.add('hidden');
         }
@@ -1914,7 +1915,7 @@
                 }
                 text.innerText = "Locale";
 
-                stateUnconfigured.classList.remove('hidden');
+                stateUnconfigured.className = "space-y-4";
                 stateConnecting.classList.add('hidden');
                 stateConnected.classList.add('hidden');
                 banner.classList.add('hidden');
