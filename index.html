@@ -37,7 +37,7 @@
             font-family: 'Inter', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
-        /* Personalizzazione barra di scorrimento */
+        /* Personalizzazione barra di scorrimento principale */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -50,6 +50,20 @@
             border-radius: 10px;
         }
         .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+        /* Personalizzazione barra di scorrimento orizzontale per i grafici scrollabili */
+        .overflow-x-auto::-webkit-scrollbar {
+            height: 6px;
+        }
+        .overflow-x-auto::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .overflow-x-auto::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .dark .overflow-x-auto::-webkit-scrollbar-thumb {
             background: #475569;
         }
         /* Correzione visualizzazione pulsanti mobile */
@@ -253,13 +267,13 @@
                 </div>
             </div>
 
-            <!-- GRIGLIA DELLE CARD CATEGORIA -->
+            <!-- GRIGLIA DELLE CARD CATEGORIA - Ottimizzata per tutti i dispositivi -->
             <div>
                 <h2 class="text-base sm:text-lg font-bold tracking-tight mb-3 flex items-center gap-2">
                     <i data-lucide="grid" class="w-5 h-5 text-brand-500"></i>
                     <span>Sfoglia Categorie</span>
                 </h2>
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3" id="categories-grid">
+                <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 sm:gap-4" id="categories-grid">
                     <!-- Popolato via JS -->
                 </div>
             </div>
@@ -301,7 +315,7 @@
 
             <!-- PRIMO BLOCCO GRAFICI -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-                <!-- Grafico a Ciambella Consumo / Spreco -->
+                <!-- Grafico a Ciambella Consumo / Spreco (Non necessita di scroll) -->
                 <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <h3 class="text-sm sm:text-md font-bold mb-4 flex items-center gap-2">
                         <i data-lucide="pie-chart" class="w-5 h-5 text-brand-500"></i>
@@ -312,22 +326,25 @@
                     </div>
                 </div>
 
-                <!-- Grafico a barre Categorie -->
-                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <!-- Grafico a barre Categorie (Scrollabile Orizzontalmente) -->
+                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                     <h3 class="text-sm sm:text-md font-bold mb-4 flex items-center gap-2">
                         <i data-lucide="bar-chart-2" class="w-5 h-5 text-brand-500"></i>
                         <span>Distribuzione Attuale nelle Categorie</span>
                     </h3>
-                    <div class="relative h-56 sm:h-64">
-                        <canvas id="categoryChart"></canvas>
+                    <!-- Wrapper Scrollabile Orizzontalmente -->
+                    <div class="overflow-x-auto pb-2">
+                        <div class="relative h-56 sm:h-64" style="width: 800px;">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- SECONDO BLOCCO GRAFICI AGGIUNTIVI -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mt-6 sm:mt-8">
-                <!-- Grafico a barre Categorie più Aggiunte (Verde) -->
-                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <!-- Grafico a barre Categorie più Aggiunte (Scrollabile Orizzontalmente) -->
+                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                         <h3 class="text-sm sm:text-md font-bold flex items-center gap-2">
                             <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-500"></i>
@@ -345,13 +362,16 @@
                             </select>
                         </div>
                     </div>
-                    <div class="relative h-56 sm:h-64">
-                        <canvas id="addedChart"></canvas>
+                    <!-- Wrapper Scrollabile Orizzontalmente -->
+                    <div class="overflow-x-auto pb-2">
+                        <div class="relative h-56 sm:h-64" style="width: 800px;">
+                            <canvas id="addedChart"></canvas>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Grafico a barre Categorie più Buttate (Rosso) -->
-                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <!-- Grafico a barre Categorie più Buttate (Scrollabile Orizzontalmente) -->
+                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                         <h3 class="text-sm sm:text-md font-bold flex items-center gap-2">
                             <i data-lucide="trash-2" class="w-5 h-5 text-rose-500"></i>
@@ -369,8 +389,11 @@
                             </select>
                         </div>
                     </div>
-                    <div class="relative h-56 sm:h-64">
-                        <canvas id="wastedChart"></canvas>
+                    <!-- Wrapper Scrollabile Orizzontalmente -->
+                    <div class="overflow-x-auto pb-2">
+                        <div class="relative h-56 sm:h-64" style="width: 800px;">
+                            <canvas id="wastedChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -753,6 +776,7 @@
         window.activeKpiFilter = null; // Stato del filtro KPI attivo
         window.confirmActionCallback = null;
 
+        // Ordine delle categorie verificato e salvaguardato
         const CATEGORIES = {
             'Latticini': { emoji: '🥛', color: 'border-sky-500 bg-sky-50/50 dark:bg-sky-950/10' },
             'Carne': { emoji: '🥩', color: 'border-rose-500 bg-rose-50/50 dark:bg-rose-950/10' },
@@ -899,7 +923,6 @@
             localStorage.setItem('frigotracker_foods', JSON.stringify(window.foods));
         }
 
-        // ================= RENDERING DELLA DASHBOARD PRINCIPALE =================
         function saveHistory() {
             localStorage.setItem('frigotracker_history', JSON.stringify(window.statsHistory));
         }
@@ -954,7 +977,7 @@
                     <div onclick="openCategoryModal('${cat}')" class="relative group cursor-pointer bg-white dark:bg-slate-900 border ${config.color} p-3 sm:p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 text-center flex flex-col items-center justify-center">
                         ${alertIndicator}
                         <span class="text-3xl sm:text-4xl mb-2 transition-transform group-hover:scale-110 duration-300">${config.emoji}</span>
-                        <h4 class="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200">${cat}</h4>
+                        <h4 class="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200 w-full truncate" title="${cat}">${cat}</h4>
                         <span class="mt-2 text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full ${badgeClass}">
                             ${count} ${count === 1 ? 'art.' : 'artt.'}
                         </span>
@@ -1227,7 +1250,6 @@
             document.getElementById('food-modal').classList.remove('hidden');
         }
 
-        // ================= GESTIONE MODALI UI =================
         function closeFoodModal() {
             document.getElementById('food-modal').classList.add('hidden');
         }
@@ -1377,7 +1399,7 @@
             confirmActionCallback = null;
         }
 
-        // ================= GESTIONE BACKUP (LOCAL FALLBACK) =================
+        // ================= GESTIONE BACKUP =================
         function exportData() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ foods: window.foods, statsHistory: window.statsHistory }));
             const downloadAnchor = document.createElement('a');
